@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/Anteneh-T-Tessema/legalairag/discussions
+    about: Use GitHub Discussions for questions, architecture discussions, and general help.
+  - name: Security vulnerability
+    url: https://github.com/Anteneh-T-Tessema/legalairag/blob/main/docs/SECURITY.md
+    about: Please follow the responsible disclosure process described in SECURITY.md. Do not open a public issue.

@@ -1,0 +1,105 @@
+name: Bug Report
+description: Report a bug or unexpected behaviour in IndyLeg
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Please fill out the sections below
+        so we can reproduce and fix the problem as quickly as possible.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight checklist
+      options:
+        - label: I searched existing issues and this is not a duplicate.
+          required: true
+        - label: I am running on a supported Python version (3.11).
+          required: true
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      description: Which part of the system is showing the issue?
+      options:
+        - API / FastAPI endpoints
+        - Ingestion pipeline (SQS / Worker / Chunker)
+        - Retrieval (hybrid search / reranker)
+        - Generation (Claude / CitationValidator)
+        - Agent (CaseResearch / Fraud / Summarization)
+        - Authentication / JWT
+        - Frontend (React UI)
+        - Infrastructure / CDK
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: A clear and concise description of the bug.
+      placeholder: When I call POST /search/ask with query "...", I get a 500 error instead of a grounded answer.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps to reproduce the behaviour.
+      placeholder: |
+        1. Start the API with `uvicorn api.main:app --reload`
+        2. POST to `/api/v1/search/ask` with body `{"query": "..."}`
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+      description: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What actually happened? Paste error messages, stack traces, or logs.
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: IndyLeg version / commit SHA
+      placeholder: e.g. v0.5.0 or bc68471
+    validations:
+      required: false
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: |
+        Fill in relevant details about your environment.
+      value: |
+        - OS: [e.g. macOS 14, Ubuntu 22.04]
+        - Python: [e.g. 3.11.8]
+        - Docker version: [e.g. 25.0.3]
+        - AWS region: [e.g. us-east-1]
+        - Deployment: [local / AWS ECS]
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Any other context, screenshots, or relevant configuration.

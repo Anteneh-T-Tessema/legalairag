@@ -1,15 +1,44 @@
-# IndyLeg — Indiana Legal RAG Platform
+<p align="center">
+  <img src="docs/img/architecture-overview.svg" alt="IndyLeg Architecture" width="720"/>
+</p>
 
-[![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg)](https://www.typescriptlang.org/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com/)
-[![AWS Bedrock](https://img.shields.io/badge/AWS-Bedrock-FF9900.svg)](https://aws.amazon.com/bedrock/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/Anteneh-T-Tessema/legalairag/actions/workflows/ci.yml/badge.svg)](https://github.com/Anteneh-T-Tessema/legalairag/actions)
+<h1 align="center">IndyLeg — Indiana Legal RAG Platform</h1>
 
-> **AI-powered legal research and document intelligence for Indiana courts.**
-> A production-grade Retrieval-Augmented Generation (RAG) system built on AWS Bedrock — designed for attorneys, clerks, and legal staff who need fast, citation-grounded answers from Indiana case law, statutes, and court filings.
+<p align="center">
+  <em>AI-powered legal research and document intelligence for Indiana courts.</em><br/>
+  Citation-grounded answers from case law, statutes, and court filings — in seconds.
+</p>
 
+<p align="center">
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11-blue.svg" alt="Python 3.11"/></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.x-3178C6.svg" alt="TypeScript"/></a>
+  <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.110+-009688.svg" alt="FastAPI"/></a>
+  <a href="https://aws.amazon.com/bedrock/"><img src="https://img.shields.io/badge/AWS-Bedrock-FF9900.svg" alt="AWS Bedrock"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License"/></a>
+  <a href="https://github.com/Anteneh-T-Tessema/legalairag/actions"><img src="https://github.com/Anteneh-T-Tessema/legalairag/actions/workflows/ci.yml/badge.svg" alt="CI"/></a>
+</p>
+
+<p align="center">
+  <strong>📚 <a href="docs/">Documentation</a></strong> &nbsp;·&nbsp;
+  <strong>🔍 <a href="#7-api-reference">API Reference</a></strong> &nbsp;·&nbsp;
+  <strong>🚀 <a href="#10-local-development">Quick Start</a></strong> &nbsp;·&nbsp;
+  <strong>🤝 <a href="docs/CONTRIBUTING.md">Contributing</a></strong>
+</p>
+
+---
+
+## Features
+
+- [x] **Hybrid retrieval** — pgvector cosine + BM25 fused via RRF for maximum recall. [Docs](docs/ARCHITECTURE.md#hybrid-retrieval)
+- [x] **Citation-grounded answers** — every claim is anchored to a retrieved source; hallucinations are blocked. [Docs](docs/ARCHITECTURE.md#citation-validator)
+- [x] **Indiana-specific parsing** — understands `IC §` citations, county jurisdictions, case-type taxonomy. [Docs](docs/ARCHITECTURE.md#query-parser)
+- [x] **Fraud detection agent** — 5 anomaly detectors with risk scoring and investigation memos. [Docs](docs/FRAUD_DETECTION.md)
+- [x] **Role-based access** — Admin / Attorney / Clerk / Viewer with JWT + Redis token blacklist. [Docs](docs/SECURITY.md)
+- [x] **Production infrastructure** — ECS Fargate, Aurora pgvector, OpenSearch, SQS+DLQ, CloudWatch, ALB. [Docs](docs/DEPLOYMENT.md)
+- [x] **141 tests** — unit, integration, and end-to-end; all passing in CI. [Docs](docs/TESTING.md)
+- [x] **Evaluation framework** — Recall@K, MRR, NDCG, faithfulness, and citation accuracy metrics. [Docs](docs/SYSTEM_ANALYSIS.md)
+
+> [!TIP]
 > **Quick start (< 5 minutes):**
 > ```bash
 > git clone https://github.com/Anteneh-T-Tessema/legalairag.git && cd legalairag
@@ -116,6 +145,13 @@ Legal answers must be **verifiable**. A lawyer cannot cite "the AI said so" — 
 
 ### High-Level Overview
 
+<p align="center">
+  <img src="docs/img/architecture-overview.svg" alt="IndyLeg System Architecture" width="820"/>
+</p>
+
+<details>
+<summary><strong>ASCII architecture diagram (click to expand)</strong></summary>
+
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                         INDYLEG — INDIANA LEGAL RAG PLATFORM                    │
@@ -177,7 +213,16 @@ Legal answers must be **verifiable**. A lawyer cannot cite "the AI said so" — 
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
 
+</details>
+
 ### Ingestion Data Flow
+
+<p align="center">
+  <img src="docs/img/ingestion-flow.svg" alt="Ingestion Pipeline" width="820"/>
+</p>
+
+<details>
+<summary><strong>Detailed ingestion flow diagram (click to expand)</strong></summary>
 
 ```text
   Indiana Courts Portal
@@ -226,7 +271,16 @@ Legal answers must be **verifiable**. A lawyer cannot cite "the AI said so" — 
                     table            legal-docs
 ```
 
+</details>
+
 ### Query / Answer Data Flow
+
+<p align="center">
+  <img src="docs/img/rag-pipeline.svg" alt="RAG Query Pipeline" width="820"/>
+</p>
+
+<details>
+<summary><strong>Detailed query/answer flow diagram (click to expand)</strong></summary>
 
 ```text
   User: "What is Indiana's eviction notice requirement?"
@@ -294,6 +348,8 @@ Legal answers must be **verifiable**. A lawyer cannot cite "the AI said so" — 
               Grounded Answer + source metadata
               confidence score + run_id for audit
 ```
+
+</details>
 
 ---
 
@@ -491,6 +547,10 @@ Failure case:
 ---
 
 ### 4.6 Agent Orchestration
+
+<p align="center">
+  <img src="docs/img/agent-pipeline.svg" alt="Agent Pipeline" width="820"/>
+</p>
 
 #### CaseResearchAgent (5-Step Pipeline)
 
@@ -805,6 +865,10 @@ Faithfulness       : 0.8700
 ---
 
 ## 5. Authentication & Security
+
+<p align="center">
+  <img src="docs/img/auth-flow.svg" alt="Authentication & Authorisation Flow" width="820"/>
+</p>
 
 ### JWT Token Architecture
 
@@ -1188,6 +1252,9 @@ Runs the `FraudDetectionAgent` over filings matching the query. Returns risk ass
 
 All configuration is via environment variables, loaded by Pydantic `BaseSettings` from `.env` or the environment. Secrets (API keys, DB passwords) must never be committed to version control.
 
+> [!WARNING]
+> Never commit `.env`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, or `API_SECRET_KEY` to version control. Use AWS Secrets Manager or IAM roles in production.
+
 | Variable | Default | Required | Description |
 |---|---|---|---|
 | `APP_ENV` | `development` | No | `development` \| `staging` \| `production` |
@@ -1225,6 +1292,9 @@ python -c "import secrets; print(secrets.token_hex(32))"
 ---
 
 ## 9. Project Structure
+
+<details>
+<summary><strong>Full directory tree (click to expand)</strong></summary>
 
 ```text
 indyleg/
@@ -1332,6 +1402,8 @@ indyleg/
 ├── docker-compose.yml              # Local dev: postgres, opensearch, localstack
 └── README.md                       # This file
 ```
+
+</details>
 
 ---
 
@@ -1558,6 +1630,9 @@ All three subcommands support `--dry-run`. In this mode, the CLI prints the woul
 
 ## 13. AWS Deployment
 
+> [!CAUTION]
+> Deploying to AWS will incur compute and data transfer costs. Review the [DEPLOYMENT.md](docs/DEPLOYMENT.md) cost estimates before running `cdk deploy`. Aurora Multi-AZ and OpenSearch are the primary cost drivers.
+
 ### Infrastructure Overview
 
 The CDK stacks deploy the following AWS resources:
@@ -1657,6 +1732,9 @@ The CDK stack creates this role automatically via `api_stack.py`.
 ---
 
 ## 14. Performance
+
+> [!NOTE]
+> These targets assume a warm ECS container (no cold-start) and a Bedrock region with low latency (e.g., `us-east-1`). Cross-encoder re-ranking runs on CPU — latency will vary depending on task instance type.
 
 ### Latency Targets (p95)
 
@@ -1759,6 +1837,9 @@ Run `EXPLAIN ANALYZE` on a vector query. If a sequential scan is used instead of
 
 ## 17. Contributing
 
+> [!NOTE]
+> Read [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for the full contribution guide, including branch naming, test requirements, and the PR review process.
+
 Contributions are welcome. Please follow these steps:
 
 **1. Fork and branch**
@@ -1808,6 +1889,19 @@ The CI pipeline will run automatically on your PR branch.
 
 ---
 
+## Community & Support
+
+| Channel | Best for |
+|---|---|
+| [GitHub Issues](https://github.com/Anteneh-T-Tessema/legalairag/issues) | Bug reports, unexpected behaviour, and confirmed errors |
+| [GitHub Discussions](https://github.com/Anteneh-T-Tessema/legalairag/discussions) | Architecture questions, feature ideas, usage patterns |
+| [Pull Requests](https://github.com/Anteneh-T-Tessema/legalairag/pulls) | Code contributions, documentation fixes, new integrations |
+
+> [!IMPORTANT]
+> For security vulnerabilities, **do not** open a public issue. Follow the responsible disclosure process in [docs/SECURITY.md](docs/SECURITY.md).
+
+---
+
 ## 18. License
 
 This is a sample RAG application developed by **Anteneh Tessema** for demonstration purposes only.
@@ -1817,6 +1911,17 @@ The codebase is released under the **MIT License** — see [LICENSE](LICENSE) fo
 ---
 
 ## 19. Changelog
+
+### v0.6.0 — Visual Documentation & Community Files
+
+- **README hero redesign** — centered architecture SVG, HTML badge row, feature checklist with `[x]` markers, doc links
+- **5 SVG diagrams** — `architecture-overview.svg`, `rag-pipeline.svg`, `ingestion-flow.svg`, `auth-flow.svg`, `agent-pipeline.svg` in `docs/img/`
+- **GitHub Alerts** — `> [!TIP]`, `> [!NOTE]`, `> [!WARNING]`, `> [!CAUTION]`, `> [!IMPORTANT]` callouts throughout README
+- **Collapsible sections** — `<details>` blocks for ASCII diagrams and project tree
+- **Community & Support** section with channel-purpose table
+- **GitHub community files** — `ISSUE_TEMPLATE/bug_report.yml`, `feature_request.yml`, `config.yml`, `PULL_REQUEST_TEMPLATE.md`
+- **docs/GLOSSARY.md** — 40+ terms across legal, AI/ML, IndyLeg-specific, and infrastructure domains
+- **.markdownlint.json** — configured allowed HTML elements and disabled cosmetic rules
 
 ### v0.5.0 — Documentation Overhaul
 

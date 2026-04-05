@@ -1,0 +1,84 @@
+name: Feature Request
+description: Suggest a new feature or improvement for IndyLeg
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please describe the problem you're trying to solve
+        and the solution you have in mind. The more context you provide, the better we can
+        evaluate and prioritise the request.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Preflight checklist
+      options:
+        - label: I searched existing issues and discussions — this has not been requested before.
+          required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Feature area
+      options:
+        - Retrieval (search quality, new index types)
+        - Generation (prompting, new models, output format)
+        - Ingestion (new data sources, improved chunking)
+        - Agents (new agent type, tool additions)
+        - API (new endpoint, schema change)
+        - Authentication / RBAC
+        - Frontend UI
+        - Infrastructure / deployment
+        - Evaluation / metrics
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: |
+        What user problem or workflow inefficiency does this feature address?
+        (e.g., "Attorneys cannot filter search results by Indiana Code chapter")
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: |
+        Describe your proposed solution. Include API shape, data model changes,
+        or UI mockups if relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What other approaches did you consider and why are they insufficient?
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Impact estimate
+      options:
+        - Critical — blocks primary workflow
+        - High — significant quality improvement
+        - Medium — nice to have, clear value
+        - Low — minor improvement
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Links, references, related issues, or implementation notes.
