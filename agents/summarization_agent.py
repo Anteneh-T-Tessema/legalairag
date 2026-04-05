@@ -61,8 +61,7 @@ class SummarizationAgent(BaseAgent):
             None,
             lambda: self._llm.complete(
                 system=(
-                    "You are a precise legal document analyst. "
-                    "Extract structured information only."
+                    "You are a precise legal document analyst. Extract structured information only."
                 ),
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.0,

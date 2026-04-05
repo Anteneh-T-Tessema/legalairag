@@ -186,8 +186,7 @@ class _FilingPatternAnalyzer:
                         indicator_type="identity_reuse",
                         severity="medium",
                         description=(
-                            f"Date of birth {dob} appears in "
-                            f"{len(unique_cases)} separate cases."
+                            f"Date of birth {dob} appears in {len(unique_cases)} separate cases."
                         ),
                         evidence=unique_cases,
                         confidence=0.55,

@@ -648,3 +648,219 @@ footer {
     min-width: 100%;
   }
 }
+
+/* ── Fraud Analysis ─────────────────────────────────────── */
+.fraud-analysis {
+  max-width: 800px;
+}
+
+.fraud-input-section h3 {
+  font-size: 1.15rem;
+  margin-bottom: 0.25rem;
+}
+
+.fraud-description {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.fraud-input-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.fraud-input-row input {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+}
+
+.fraud-input-row input:focus {
+  outline: none;
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px rgba(26, 58, 92, 0.1);
+}
+
+.fraud-input-row button {
+  padding: 0.7rem 1.5rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.fraud-input-row button:hover:not(:disabled) {
+  background: var(--primary-light);
+}
+
+.fraud-input-row button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.fraud-risk-banner {
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.risk-none { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.risk-low { background: #fefce8; border: 1px solid #fef08a; }
+.risk-medium { background: #fff7ed; border: 1px solid #fed7aa; }
+.risk-high { background: #fef2f2; border: 1px solid #fecaca; }
+.risk-critical { background: #fef2f2; border: 2px solid #dc2626; }
+
+.risk-level-display {
+  display: flex;
+  flex-direction: column;
+}
+
+.risk-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.risk-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.risk-stats {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.human-review-badge {
+  background: #dc2626;
+  color: #fff;
+  padding: 0.3rem 0.75rem;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.fraud-summary,
+.fraud-indicators,
+.fraud-flagged-sources {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.fraud-summary h4,
+.fraud-indicators h4,
+.fraud-flagged-sources h4 {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fraud-summary p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.indicator-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.indicator-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.severity-badge {
+  display: inline-block;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.indicator-type {
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: capitalize;
+}
+
+.indicator-confidence {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.indicator-description {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.indicator-evidence {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.indicator-evidence ul {
+  margin-left: 1.25rem;
+  margin-top: 0.25rem;
+}
+
+.indicator-evidence li {
+  margin-bottom: 0.2rem;
+}
+
+.flagged-ids {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.flagged-id-tag {
+  display: inline-block;
+  background: #fef2f2;
+  color: #b91c1c;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+@media (max-width: 768px) {
+  .fraud-input-row {
+    flex-direction: column;
+  }
+
+  .risk-stats {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}

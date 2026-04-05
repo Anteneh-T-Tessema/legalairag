@@ -8,14 +8,24 @@
 #   - AWS CLI configured with appropriate credentials
 #   - Node.js + npm installed
 #   - CDK CLI: npm install -g aws-cdk
+#   - Python 3.11+
 
 set -euo pipefail
 
 ENV="${1:-dev}"
-CDK_DIR="$(cd "$(dirname "$0")/cdk" && pwd)"
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+CDK_DIR="${ROOT_DIR}/infrastructure/cdk"
 
 echo "=== Deploying IndyLeg (env: ${ENV}) ==="
 
+# ── Build UI ──────────────────────────────────────────────
+echo "--- Building UI ---"
+cd "${ROOT_DIR}/ui"
+npm ci
+npm run build
+echo "UI build complete."
+
+# ── CDK Deploy ────────────────────────────────────────────
 cd "$CDK_DIR"
 
 # Install CDK dependencies

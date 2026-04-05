@@ -90,6 +90,17 @@ services:
       localstack:
         condition: service_healthy
 
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_BASE=http://localhost:8000/api/v1
+    depends_on:
+      - api
+
 volumes:
   pgdata:
   osdata:

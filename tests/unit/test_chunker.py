@@ -37,8 +37,7 @@ class TestLegalChunker:
         )
         body2 = (
             "Any person who violates the provisions of this "
-            "section shall be guilty of a Class A misdemeanor. "
-            * 3
+            "section shall be guilty of a Class A misdemeanor. " * 3
         )
         text = f"SECTION 1. General Provisions\n{body1}\n\nSECTION 2. Penalties\n{body2}"
         doc = _make_doc(text)

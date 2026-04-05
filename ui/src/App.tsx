@@ -4,11 +4,12 @@ import { ResultCard } from "./components/ResultCard";
 import { ChatInterface } from "./components/ChatInterface";
 import { SearchResults } from "./components/SearchResults";
 import { DocumentUpload } from "./components/DocumentUpload";
+import { FraudAnalysis } from "./components/FraudAnalysis";
 import { LoginForm } from "./components/LoginForm";
 import { ask, isAuthenticated, logout } from "./api/client";
 import type { AskResponse } from "./api/client";
 
-type Tab = "ask" | "search" | "chat" | "documents";
+type Tab = "ask" | "search" | "chat" | "fraud" | "documents";
 
 export default function App() {
   const [authed, setAuthed] = useState(isAuthenticated());
@@ -63,6 +64,9 @@ export default function App() {
           <button className={tab === "chat" ? "active" : ""} onClick={() => setTab("chat")}>
             Chat
           </button>
+          <button className={tab === "fraud" ? "active" : ""} onClick={() => setTab("fraud")}>
+            Fraud Analysis
+          </button>
           <button className={tab === "documents" ? "active" : ""} onClick={() => setTab("documents")}>
             Documents
           </button>
@@ -87,6 +91,7 @@ export default function App() {
 
         {tab === "search" && <SearchResults jurisdiction={jurisdiction} />}
         {tab === "chat" && <ChatInterface jurisdiction={jurisdiction} />}
+        {tab === "fraud" && <FraudAnalysis />}
         {tab === "documents" && <DocumentUpload />}
       </main>
 

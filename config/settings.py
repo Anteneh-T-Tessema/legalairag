@@ -19,7 +19,10 @@ class Settings(BaseSettings):
         default="dev-secret-change-in-production",
         description="HMAC signing key for API",
     )
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
+
+    # ── Rate Limiting ────────────────────────────────────────────────────────
+    rate_limit_per_minute: int = 60
 
     # ── AWS ──────────────────────────────────────────────────────────────────
     aws_region: str = "us-east-1"
