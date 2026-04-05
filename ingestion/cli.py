@@ -38,7 +38,7 @@ async def ingest_recent(county: str, days: int, dry_run: bool) -> int:
                 msg = IngestionMessage(
                     source_id=doc.doc_id,
                     source_type="indiana_courts",
-                    document_url=doc.download_url,
+                    download_url=doc.download_url,
                     metadata={
                         "case_number": case.case_number,
                         "court": case.court,
@@ -77,7 +77,7 @@ async def ingest_search(
                 msg = IngestionMessage(
                     source_id=doc.doc_id,
                     source_type="indiana_courts",
-                    document_url=doc.download_url,
+                    download_url=doc.download_url,
                     metadata={
                         "case_number": case.case_number,
                         "court": case.court,
@@ -111,7 +111,7 @@ async def ingest_case(case_number: str, dry_run: bool) -> int:
             msg = IngestionMessage(
                 source_id=doc.doc_id,
                 source_type="indiana_courts",
-                document_url=doc.download_url,
+                download_url=doc.download_url,
                 metadata={
                     "case_number": case.case_number,
                     "court": case.court,

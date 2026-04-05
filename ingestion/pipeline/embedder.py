@@ -74,7 +74,7 @@ class BedrockEmbedder:
         async with self._semaphore:
             tasks = [self._embed_text(chunk.text) for chunk in batch]
             vectors = await asyncio.gather(*tasks)
-            return list(zip(batch, vectors, strict=False))
+            return list(zip(batch, vectors))  # noqa: B905
 
     async def _embed_text(self, text: str) -> list[float]:
         """Wrap synchronous Bedrock call in executor to avoid blocking the event loop."""
