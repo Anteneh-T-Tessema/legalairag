@@ -5,9 +5,17 @@ interface Props {
   onChange: (q: string) => void;
   onSubmit: () => void;
   loading: boolean;
+  jurisdiction?: string;
+  onJurisdictionChange?: (j: string) => void;
 }
 
-export function SearchBar({ query, onChange, onSubmit, loading }: Props) {
+const JURISDICTIONS = [
+  "Indiana", "Marion County", "Hamilton County", "Allen County",
+  "Lake County", "St. Joseph County", "Vanderburgh County", "Tippecanoe County",
+  "Elkhart County", "Monroe County", "Hendricks County",
+];
+
+export function SearchBar({ query, onChange, onSubmit, loading, jurisdiction, onJurisdictionChange }: Props) {
   const handleKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -24,10 +32,26 @@ export function SearchBar({ query, onChange, onSubmit, loading }: Props) {
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKey}
         disabled={loading}
+        aria-label="Search query"
       />
-      <button onClick={onSubmit} disabled={loading || query.trim().length < 3}>
-        {loading ? "Researching…" : "Ask"}
-      </button>
+      <div className="search-controls">
+        {onJurisdictionChange && (
+          <select
+            value={jurisdiction ?? ""}
+            onChange={(e) => onJurisdictionChange(e.target.value)}
+            aria-label="Filter by jurisdiction"
+            className="jurisdiction-select"
+          >
+            <option value="">All jurisdictions</option>
+            {JURISDICTIONS.map((j) => (
+              <option key={j} value={j}>{j}</option>
+            ))}
+          </select>
+        )}
+        <button onClick={onSubmit} disabled={loading || query.trim().length < 3}>
+          {loading ? "Researching…" : "Ask"}
+        </button>
+      </div>
     </div>
   );
 }

@@ -4,19 +4,19 @@ interface Props {
   result: AskResponse;
 }
 
-const CONFIDENCE_COLORS: Record<string, string> = {
-  High: "#1a7f37",
-  Medium: "#9a6700",
-  Low: "#cf222e",
+const CONFIDENCE_CLASSES: Record<string, string> = {
+  High: "confidence-high",
+  Medium: "confidence-medium",
+  Low: "confidence-low",
 };
 
 export function ResultCard({ result }: Props) {
-  const color = CONFIDENCE_COLORS[result.confidence] ?? "#444";
+  const cls = CONFIDENCE_CLASSES[result.confidence] ?? "";
 
   return (
     <div className="result-card">
       <div className="result-header">
-        <span className="confidence-badge" style={{ color }}>
+        <span className={`confidence-badge ${cls}`}>
           {result.confidence} Confidence
         </span>
         <span className="run-id">Run: {result.run_id.slice(0, 8)}</span>

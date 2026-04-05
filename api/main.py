@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.middleware.audit_log import AuditLogMiddleware
 from api.routers import documents, search
+from api.routers.auth_router import router as auth_router
 from config.logging import configure_logging
 from config.settings import settings
 
@@ -30,6 +31,7 @@ app.add_middleware(
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 
+app.include_router(auth_router, prefix="/api/v1")
 app.include_router(search.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
 

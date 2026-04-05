@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
+from api.auth import Role, UserInfo, require_role
 from api.schemas.documents import IngestRequest, IngestResponse
 from ingestion.queue.sqs import IngestionMessage, SQSProducer
 
@@ -11,7 +12,10 @@ _producer = SQSProducer()
 
 
 @router.post("/ingest", response_model=IngestResponse, status_code=status.HTTP_202_ACCEPTED)
-async def ingest_document(req: IngestRequest) -> IngestResponse:
+async def ingest_document(
+    req: IngestRequest,
+    _user: UserInfo = Depends(require_role(Role.ADMIN, Role.ATTORNEY)),
+) -> IngestResponse:
     """
     Queue a document for async ingestion.
     Returns immediately; actual processing happens in the background worker.

@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from agents.research_agent import CaseResearchAgent
+from api.auth import UserInfo, get_current_user
 from api.schemas.search import (
     AskRequest,
     AskResponse,
@@ -25,7 +26,7 @@ _agent = CaseResearchAgent()
 
 
 @router.post("", response_model=SearchResponse)
-async def search(req: SearchRequest) -> SearchResponse:
+async def search(req: SearchRequest, _user: UserInfo = Depends(get_current_user)) -> SearchResponse:
     """
     Hybrid vector + BM25 search with cross-encoder re-ranking.
     Returns ranked chunks with citation metadata — no generation.
@@ -69,7 +70,7 @@ async def search(req: SearchRequest) -> SearchResponse:
 
 
 @router.post("/ask", response_model=AskResponse)
-async def ask(req: AskRequest) -> AskResponse:
+async def ask(req: AskRequest, _user: UserInfo = Depends(get_current_user)) -> AskResponse:
     """
     Full RAG pipeline: retrieve → re-rank → generate citation-grounded answer.
     Uses the CaseResearchAgent for multi-step reasoning with audit trail.

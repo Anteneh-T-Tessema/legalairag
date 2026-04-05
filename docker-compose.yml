@@ -12,6 +12,11 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./infrastructure/docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U indyleg"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   opensearch:
     image: opensearchproject/opensearch:2.14.0
@@ -23,17 +28,27 @@ services:
       - "9200:9200"
     volumes:
       - osdata:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   localstack:
     image: localstack/localstack:3.5
     ports:
       - "4566:4566"
     environment:
-      - SERVICES=s3,sqs,batch,lambda
+      - SERVICES=s3,sqs
       - DEFAULT_REGION=us-east-1
     volumes:
       - localstackdata:/var/lib/localstack
       - ./infrastructure/docker/localstack-init.sh:/etc/localstack/init/ready.d/init.sh
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4566/_localstack/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   api:
     build:
@@ -45,9 +60,15 @@ services:
     environment:
       - DATABASE_URL=postgresql+psycopg://indyleg:changeme@postgres:5432/indyleg
       - OPENSEARCH_HOST=http://opensearch:9200
+      - SQS_INGESTION_QUEUE_URL=http://localstack:4566/000000000000/indyleg-ingestion
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
     depends_on:
-      - postgres
-      - opensearch
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
 
   worker:
     build:
@@ -57,10 +78,17 @@ services:
     environment:
       - DATABASE_URL=postgresql+psycopg://indyleg:changeme@postgres:5432/indyleg
       - OPENSEARCH_HOST=http://opensearch:9200
+      - SQS_INGESTION_QUEUE_URL=http://localstack:4566/000000000000/indyleg-ingestion
+      - AWS_ENDPOINT_URL=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
     depends_on:
-      - postgres
-      - opensearch
-      - localstack
+      postgres:
+        condition: service_healthy
+      opensearch:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
 
 volumes:
   pgdata:
