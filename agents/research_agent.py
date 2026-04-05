@@ -115,7 +115,7 @@ class CaseResearchAgent(BaseAgent):
         )
 
 
-def _estimate_confidence(ranked_results: list) -> str:
+def _estimate_confidence(ranked_results: list[Any]) -> str:
     """
     Confidence heuristic using score gap between top result and tail.
 

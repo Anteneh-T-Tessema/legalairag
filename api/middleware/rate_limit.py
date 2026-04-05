@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import time
 from collections import defaultdict
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from fastapi import Request, Response, status
@@ -29,7 +30,7 @@ _WINDOW_SECONDS = 60
 _redis: Any = None
 
 
-def _get_redis():
+def _get_redis() -> Any:
     """Lazy-init a Redis connection from settings.redis_url."""
     global _redis
     if _redis is not None:
@@ -38,7 +39,7 @@ def _get_redis():
     if not redis_url:
         return None
     try:
-        import redis as _redis_lib  # type: ignore[import-untyped]
+        import redis as _redis_lib
 
         _redis = _redis_lib.Redis.from_url(
             redis_url,
@@ -113,7 +114,9 @@ _buckets: dict[str, _TokenBucket] = defaultdict(_TokenBucket)
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Reject requests exceeding the per-IP rate limit with 429."""
 
-    async def dispatch(self, request: Request, call_next: any) -> Response:  # type: ignore[override]
+    async def dispatch(  # noqa: E501
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         if settings.app_env == "development":
             return await call_next(request)
 

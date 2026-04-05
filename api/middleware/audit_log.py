@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Awaitable, Callable
 
 import structlog
 from fastapi import Request, Response
@@ -17,7 +18,9 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
     Sensitive headers (Authorization) are redacted.
     """
 
-    async def dispatch(self, request: Request, call_next: any) -> Response:
+    async def dispatch(  # noqa: E501
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         request_id = str(uuid.uuid4())
         structlog.contextvars.bind_contextvars(request_id=request_id)
 

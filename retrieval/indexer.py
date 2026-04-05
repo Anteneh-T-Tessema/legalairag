@@ -76,7 +76,7 @@ class VectorIndexer:
         self._database_url = database_url
         self._conn: psycopg.AsyncConnection | None = None
 
-    async def _get_conn(self) -> psycopg.AsyncConnection:  # type: ignore[type-arg]
+    async def _get_conn(self) -> psycopg.AsyncConnection[Any]:
         if self._conn is None or self._conn.closed:
             self._conn = await psycopg.AsyncConnection.connect(self._database_url)
             await register_vector(self._conn)

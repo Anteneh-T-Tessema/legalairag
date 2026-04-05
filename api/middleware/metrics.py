@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 import structlog
@@ -93,7 +94,9 @@ def format_prometheus() -> str:
 class MetricsMiddleware(BaseHTTPMiddleware):
     """Record per-route request count, error count, and latency."""
 
-    async def dispatch(self, request: Request, call_next: any) -> Response:  # type: ignore[override]
+    async def dispatch(  # noqa: E501
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
         start = time.perf_counter()
         response = await call_next(request)
         duration_ms = (time.perf_counter() - start) * 1000

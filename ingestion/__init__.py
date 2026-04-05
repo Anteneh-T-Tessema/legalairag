@@ -11,7 +11,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str):  # noqa: C901
+def __getattr__(name: str) -> object:  # noqa: C901
     if name in ("Chunk", "LegalChunker"):
         from ingestion.pipeline.chunker import Chunk, LegalChunker
         return {"Chunk": Chunk, "LegalChunker": LegalChunker}[name]

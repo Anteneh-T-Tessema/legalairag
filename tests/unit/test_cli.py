@@ -73,11 +73,11 @@ class TestIngestRecent:
             ctx.get_case = AsyncMock(return_value=full_case)
 
             producer = MockProducer.return_value
-            producer.send = AsyncMock()
+            producer.publish = AsyncMock()
 
             count = _run(ingest_recent("Marion County", 7, dry_run=False))
             assert count == 1
-            producer.send.assert_called_once()
+            producer.publish.assert_called_once()
 
 
 # ── ingest_search ─────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ class TestIngestSearch:
             ctx.get_case = AsyncMock(return_value=full)
 
             producer = MockProducer.return_value
-            producer.send = AsyncMock()
+            producer.publish = AsyncMock()
 
             count = _run(ingest_search("eviction", "Marion County", "Civil", dry_run=False))
             assert count == 1
@@ -168,11 +168,11 @@ class TestIngestCase:
             ctx.get_case = AsyncMock(return_value=case)
 
             producer = MockProducer.return_value
-            producer.send = AsyncMock()
+            producer.publish = AsyncMock()
 
             count = _run(ingest_case("49D01-2401-CT-000123", dry_run=False))
             assert count == 2
-            assert producer.send.call_count == 2
+            assert producer.publish.call_count == 2
 
 
 # ── main() argument parsing ──────────────────────────────────────────────────

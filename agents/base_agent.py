@@ -144,7 +144,7 @@ class BaseAgent(ABC):
         s3_bucket = getattr(settings, "audit_s3_bucket", "")
         if s3_bucket:
             try:
-                import aioboto3  # type: ignore[import-untyped]
+                import aioboto3
 
                 session = aioboto3.Session()
                 async with session.client("s3") as s3:

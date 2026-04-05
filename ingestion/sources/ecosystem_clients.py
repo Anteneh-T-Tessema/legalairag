@@ -20,7 +20,7 @@ import asyncio
 import re
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -93,7 +93,7 @@ class _BaseEcosystemClient:
                         await asyncio.sleep(wait)
                         continue
                     resp.raise_for_status()
-                    return resp.json()  # type: ignore[return-value]
+                    return cast(dict[str, Any], resp.json())
                 except httpx.HTTPStatusError:
                     raise
             raise RuntimeError(f"Exhausted retries for {self.__class__.__name__} {path}")

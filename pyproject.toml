@@ -110,3 +110,6 @@ exclude_lines = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "live: marks tests requiring live external services (deselect with -m 'not live')",
+]

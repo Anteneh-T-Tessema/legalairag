@@ -48,7 +48,7 @@ async def ingest_recent(county: str, days: int, dry_run: bool) -> int:
                         "filed_date": doc.filed_date.isoformat(),
                     },
                 )
-                await producer.send(msg)
+                await producer.publish(msg)
                 queued += 1
                 logger.info("queued_document", doc_id=doc.doc_id, case=case.case_number)
 
@@ -87,7 +87,7 @@ async def ingest_search(
                         "filed_date": doc.filed_date.isoformat(),
                     },
                 )
-                await producer.send(msg)
+                await producer.publish(msg)
                 queued += 1
 
     logger.info("ingest_search_complete", query=query, queued=queued)
@@ -121,7 +121,7 @@ async def ingest_case(case_number: str, dry_run: bool) -> int:
                     "filed_date": doc.filed_date.isoformat(),
                 },
             )
-            await producer.send(msg)
+            await producer.publish(msg)
             queued += 1
 
     logger.info("ingest_case_complete", case_number=case_number, queued=queued)

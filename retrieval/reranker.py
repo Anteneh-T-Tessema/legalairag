@@ -35,7 +35,7 @@ class CrossEncoderReranker:
 
     def _load_model(self) -> Any:
         if self._model is None:
-            from sentence_transformers import CrossEncoder  # type: ignore[import-untyped]
+            from sentence_transformers import CrossEncoder
 
             self._model = CrossEncoder(self._model_name, max_length=512)
             logger.info("cross_encoder_loaded", model=self._model_name)
@@ -61,8 +61,8 @@ class CrossEncoderReranker:
 
         for i in range(0, len(pairs), self._batch_size):
             batch = pairs[i : i + self._batch_size]
-            batch_scores = await asyncio.get_event_loop().run_in_executor(
-                None, lambda b=batch: model.predict(b).tolist()
+            batch_scores: list[float] = await asyncio.get_event_loop().run_in_executor(
+                None, lambda b=batch: model.predict(b).tolist()  # type: ignore[misc]
             )
             scores.extend(batch_scores)
 

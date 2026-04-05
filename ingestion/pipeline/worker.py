@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from typing import cast
 
 import boto3
 
@@ -117,7 +118,7 @@ class IngestionWorker:
             None,
             lambda: self._s3.get_object(Bucket=bucket, Key=key),
         )
-        return response["Body"].read()  # type: ignore[return-value]
+        return cast(bytes, response["Body"].read())
 
     async def _download_http(self, url: str) -> bytes:
         import httpx

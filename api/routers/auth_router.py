@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
@@ -23,7 +25,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 _SEED_SALT = "indyleg-dev-salt-do-not-use-in-production"
 
-_USERS: dict[str, dict] = {
+_USERS: dict[str, dict[str, Any]] = {
     "admin": {
         "hashed": hash_password("admin123", _SEED_SALT)[0],
         "salt": _SEED_SALT,
@@ -87,7 +89,7 @@ async def refresh(req: RefreshRequest) -> TokenResponse:
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(user: UserInfo = Depends(get_current_user)):
+async def logout(user: UserInfo = Depends(get_current_user)) -> None:
     """Revoke the current access token (logout)."""
     # We need the raw token to revoke; re-parse from the dependency isn't ideal,
     # so we accept a body with the token to revoke.
@@ -97,7 +99,7 @@ async def logout(user: UserInfo = Depends(get_current_user)):
 
 
 @router.post("/revoke", status_code=status.HTTP_204_NO_CONTENT)
-async def revoke(req: RefreshRequest, user: UserInfo = Depends(get_current_user)):
+async def revoke(req: RefreshRequest, user: UserInfo = Depends(get_current_user)) -> None:
     """Explicitly revoke a refresh token (e.g. on logout from all devices)."""
     payload = decode_token(req.refresh_token)
     if payload.sub != user.username:

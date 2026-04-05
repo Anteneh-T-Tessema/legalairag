@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from typing import Any
 
@@ -85,11 +86,16 @@ class SQSProducer:
                 for j, msg in enumerate(batch)
             ]
             loop = asyncio.get_event_loop()
+            batch_entries = entries
+
+            def _send_batch(be: list[dict[str, Any]] = batch_entries) -> Any:
+                return self._client.send_message_batch(
+                    QueueUrl=self._queue_url, Entries=be
+                )
+
             response = await loop.run_in_executor(
                 None,
-                lambda entries=entries: self._client.send_message_batch(
-                    QueueUrl=self._queue_url, Entries=entries
-                ),
+                _send_batch,
             )
             failed = response.get("Failed", [])
             if failed:
@@ -121,7 +127,7 @@ class SQSConsumer:
         self._wait_seconds = wait_seconds
         self._client = boto3.client("sqs", config=_SQS_CONFIG)
 
-    async def receive(self):  # type: ignore[return]
+    async def receive(self) -> AsyncGenerator[tuple[IngestionMessage, str], None]:
         """Async generator yielding (IngestionMessage, receipt_handle) pairs."""
         loop = asyncio.get_event_loop()
         while True:

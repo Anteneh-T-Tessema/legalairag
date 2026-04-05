@@ -4,7 +4,7 @@ import asyncio
 import re
 from dataclasses import dataclass, field
 from datetime import date
-from typing import Any
+from typing import Any, cast
 
 import httpx
 
@@ -135,7 +135,7 @@ class IndianaCourtClient:
                         await asyncio.sleep(wait)
                         continue
                     resp.raise_for_status()
-                    return resp.json()  # type: ignore[return-value]
+                    return cast(dict[str, Any], resp.json())
                 except httpx.HTTPStatusError as exc:
                     logger.error("http_error", path=path, status=exc.response.status_code)
                     raise
@@ -409,7 +409,7 @@ class MyCaseClient:
                         await asyncio.sleep(wait)
                         continue
                     resp.raise_for_status()
-                    return resp.json()  # type: ignore[return-value]
+                    return cast(dict[str, Any], resp.json())
                 except httpx.HTTPStatusError as exc:
                     logger.error("mycase_http_error", path=path, status=exc.response.status_code)
                     raise

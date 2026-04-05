@@ -229,7 +229,7 @@ def dcg_at_k(retrieved: list[str], graded: dict[str, int], k: int) -> float:
 def ndcg_at_k(retrieved: list[str], graded: dict[str, int], k: int) -> float:
     """Normalized DCG at K."""
     ideal_order = sorted(graded.values(), reverse=True)[:k]
-    idcg = sum((2**rel - 1) / math.log2(i + 2) for i, rel in enumerate(ideal_order))
+    idcg: float = sum(((2**rel - 1) / math.log2(i + 2) for i, rel in enumerate(ideal_order)), 0.0)
     if idcg == 0:
         return 0.0
     return dcg_at_k(retrieved, graded, k) / idcg

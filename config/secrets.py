@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 from functools import lru_cache
+from typing import cast
 
 import boto3
 from botocore.exceptions import ClientError
@@ -31,7 +32,7 @@ def resolve_ssm_parameter(name: str, *, decrypt: bool = True) -> str | None:
     try:
         client = boto3.client("ssm")
         resp = client.get_parameter(Name=name, WithDecryption=decrypt)
-        return resp["Parameter"]["Value"]
+        return str(resp["Parameter"]["Value"])
     except ClientError as exc:
         code = exc.response["Error"]["Code"]
         if code == "ParameterNotFound":
@@ -50,7 +51,7 @@ def resolve_secrets_manager(secret_id: str) -> dict[str, str] | None:
     try:
         client = boto3.client("secretsmanager")
         resp = client.get_secret_value(SecretId=secret_id)
-        return json.loads(resp["SecretString"])
+        return cast(dict[str, str], json.loads(resp["SecretString"]))
     except (ClientError, json.JSONDecodeError, KeyError) as exc:
         logger.warning("Secrets Manager lookup failed for %s: %s", secret_id, exc)
         return None

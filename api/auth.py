@@ -7,6 +7,7 @@ import hmac
 import logging
 import secrets
 import threading
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 
@@ -64,13 +65,13 @@ def _prune_blacklist() -> None:
         del _blacklist[jti]
 
 
-def _get_revocation_redis():
+def _get_revocation_redis() -> Any:
     """Return a Redis client for token revocation, or None."""
     redis_url = getattr(settings, "redis_url", "")
     if not redis_url:
         return None
     try:
-        import redis as _redis_lib  # type: ignore[import-untyped]
+        import redis as _redis_lib
 
         r = _redis_lib.Redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=2)
         r.ping()
@@ -102,7 +103,7 @@ def is_token_revoked(jti: str) -> bool:
     r = _get_revocation_redis()
     if r is not None:
         try:
-            return r.exists(f"revoked:{jti}") > 0
+            return bool(r.exists(f"revoked:{jti}"))
         except Exception:  # noqa: S110 — intentional fallback to in-memory blacklist
             pass
     with _blacklist_lock:
@@ -233,10 +234,12 @@ async def get_current_user(
 ) -> UserInfo:
     """Dependency — extracts and validates the current user from the Bearer token."""
     payload = decode_token(creds.credentials)
+    if payload.role is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing role")
     return UserInfo(username=payload.sub, role=payload.role)
 
 
-def require_role(*allowed: Role):
+def require_role(*allowed: Role) -> Callable[..., Awaitable[UserInfo]]:
     """Factory for role-gating dependencies."""
 
     async def _check(user: Annotated[UserInfo, Depends(get_current_user)]) -> UserInfo:

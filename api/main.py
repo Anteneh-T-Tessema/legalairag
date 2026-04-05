@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
@@ -62,6 +64,6 @@ async def metrics() -> str:
 
 
 @app.get("/metrics/json", tags=["ops"])
-async def metrics_json() -> dict:
+async def metrics_json() -> dict[str, Any]:
     """JSON metrics for dashboards and monitoring."""
     return get_metrics()

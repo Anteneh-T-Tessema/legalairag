@@ -89,7 +89,7 @@ def _parse_docx(
     filename: str,
     metadata: dict[str, Any],
 ) -> ParsedDocument:
-    from docx import Document  # type: ignore[import-untyped]
+    from docx import Document
 
     doc = Document(io.BytesIO(content))
     paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
