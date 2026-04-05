@@ -7,6 +7,12 @@ venv/
 *.egg-info/
 dist/
 build/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage
+*.cover
 
 # Git
 .git/

@@ -1,10 +1,10 @@
 {
     "venvPath": ".",
     "venv": ".venv",
-    "pythonVersion": "3.9",
+    "pythonVersion": "3.11",
     "pythonPlatform": "Darwin",
     "typeCheckingMode": "basic",
-    "extraPaths": [".venv/lib/python3.9/site-packages"],
+    "extraPaths": [".venv/lib/python3.11/site-packages"],
     "reportMissingImports": false,
     "reportMissingModuleSource": false,
     "reportMissingTypeStubs": false,

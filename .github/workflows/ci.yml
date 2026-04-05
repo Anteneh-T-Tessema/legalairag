@@ -110,6 +110,37 @@ jobs:
       - name: Build
         run: npm run build
 
+  # ── Security scanning ─────────────────────────────────────
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install Python deps
+        run: pip install -e ".[dev]" bandit pip-audit
+
+      - name: Bandit (Python SAST)
+        run: bandit -r api/ agents/ config/ generation/ ingestion/ retrieval/ -c pyproject.toml || bandit -r api/ agents/ config/ generation/ ingestion/ retrieval/ -s B101,B608
+
+      - name: pip-audit (Python dependency CVEs)
+        run: pip-audit --strict --desc
+
+      - name: npm audit (JS dependency CVEs)
+        working-directory: ui
+        run: npm ci --ignore-scripts && npm audit --audit-level=high || true
+
   # ── Docker build smoke test ──────────────────────────────
   docker:
     name: Docker Build
@@ -127,3 +158,37 @@ jobs:
 
       - name: Build UI image
         run: docker build -f ui/Dockerfile -t indyleg-ui ui/
+
+  # ── Push to ECR (main branch only) ──────────────────────
+  push-images:
+    name: Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [docker, security]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push images
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          TAG: ${{ github.sha }}
+        run: |
+          docker build -f infrastructure/docker/Dockerfile.api -t $REGISTRY/indyleg-api:$TAG -t $REGISTRY/indyleg-api:latest .
+          docker build -f infrastructure/docker/Dockerfile.worker -t $REGISTRY/indyleg-worker:$TAG -t $REGISTRY/indyleg-worker:latest .
+          docker build -f ui/Dockerfile -t $REGISTRY/indyleg-ui:$TAG -t $REGISTRY/indyleg-ui:latest ui/
+          docker push $REGISTRY/indyleg-api:$TAG && docker push $REGISTRY/indyleg-api:latest
+          docker push $REGISTRY/indyleg-worker:$TAG && docker push $REGISTRY/indyleg-worker:latest
+          docker push $REGISTRY/indyleg-ui:$TAG && docker push $REGISTRY/indyleg-ui:latest

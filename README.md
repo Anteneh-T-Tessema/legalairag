@@ -42,7 +42,7 @@
 > **Quick start (< 5 minutes):**
 > ```bash
 > git clone https://github.com/Anteneh-T-Tessema/legalairag.git && cd legalairag
-> python3.11 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+> python3.11 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
 > cp .env.example .env          # fill in AWS credentials + secrets
 > docker compose up -d          # postgres + opensearch + localstack
 > uvicorn api.main:app --reload --port 8000   # API at http://localhost:8000/docs
