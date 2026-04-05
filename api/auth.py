@@ -6,8 +6,16 @@ import hashlib
 import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
-from enum import StrEnum
 from typing import Annotated, Any
+
+try:
+    from enum import StrEnum
+except ImportError:  # Python < 3.11
+    from enum import Enum
+
+    class StrEnum(str, Enum):  # type: ignore[no-redef]  # noqa: UP042
+        pass
+
 
 import jwt
 from fastapi import Depends, HTTPException, status
@@ -41,7 +49,7 @@ class Role(StrEnum):
 
 class TokenPayload(BaseModel):
     sub: str  # username
-    role: Role
+    role: Role | None = None
     exp: datetime
     iat: datetime
     jti: str  # unique token id
@@ -120,9 +128,10 @@ def create_token_pair(username: str, role: Role) -> TokenResponse:
 def decode_token(token: str) -> TokenPayload:
     try:
         data = jwt.decode(token, _SECRET, algorithms=[_ALGORITHM])
+        role_raw = data.get("role")
         return TokenPayload(
             sub=data["sub"],
-            role=Role(data["role"]),
+            role=Role(role_raw) if role_raw else None,
             exp=datetime.fromtimestamp(data["exp"], tz=timezone.utc),
             iat=datetime.fromtimestamp(data["iat"], tz=timezone.utc),
             jti=data["jti"],
