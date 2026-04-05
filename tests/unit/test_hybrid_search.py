@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from retrieval.hybrid_search import HybridSearcher, SearchResult
 from retrieval.query_parser import parse_legal_query
 
@@ -139,4 +138,3 @@ class TestRRFFusion:
         for weight in [0.0, 0.3, 0.5, 0.7, 1.0]:
             fused = searcher._reciprocal_rank_fusion(dense, sparse, k=5, bm25_weight=weight)
             assert all(r.score > 0 for r in fused)
-

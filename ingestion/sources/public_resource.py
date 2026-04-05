@@ -53,18 +53,18 @@ _LRO_SEVENTH_CIRCUIT_DIRS = ["F3", "F2"]  # Most recent first
 class PublicLegalOpinion:
     """Normalized representation of a court opinion from any public source."""
 
-    opinion_id: str          # Stable, source-prefixed ID e.g. "cl-12345" or "lro-F3-123"
-    source: str              # "courtlistener" | "law_resource_org"
-    court: str               # Canonical court name
+    opinion_id: str  # Stable, source-prefixed ID e.g. "cl-12345" or "lro-F3-123"
+    source: str  # "courtlistener" | "law_resource_org"
+    court: str  # Canonical court name
     # "supreme" | "appeals" | "trial" | "federal_circuit" | "federal_supreme"
     court_level: str
     case_name: str
     docket_number: str
     date_filed: date
-    jurisdiction: str        # "Indiana" | "Federal/7th Circuit"
-    text: str                # Full opinion text (plain)
+    jurisdiction: str  # "Indiana" | "Federal/7th Circuit"
+    text: str  # Full opinion text (plain)
     citations_out: list[str]  # Citations this opinion makes
-    url: str                 # Canonical source URL
+    url: str  # Canonical source URL
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -152,7 +152,7 @@ class CourtListenerClient:
                     page_params = params if pages_fetched == 0 else None
                     resp = await self._client.get(url, params=page_params)
                     if resp.status_code == 429:
-                        wait = 2 ** pages_fetched
+                        wait = 2**pages_fetched
                         logger.warning("courtlistener_rate_limited", wait=wait)
                         await asyncio.sleep(wait)
                         continue
@@ -200,7 +200,7 @@ class CourtListenerClient:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         all_opinions: list[PublicLegalOpinion] = []
-        for court_id, result in zip(courts, results, strict=False):
+        for court_id, result in zip(courts, results, strict=True):
             if isinstance(result, BaseException):
                 logger.error("courtlistener_court_error", court=court_id, error=str(result))
             else:
@@ -388,10 +388,10 @@ _IGA_STATUTE_API = "https://iga.in.gov/api/20231116/mobile-sdk/laws/indiana-code
 class IndianaStatute:
     """A section of the Indiana Code, fetched from iga.in.gov."""
 
-    statute_id: str      # e.g. "ic-35-42-1-1"
-    title: str           # e.g. "35-42-1-1"
-    full_citation: str   # e.g. "Ind. Code § 35-42-1-1"
-    subject: str         # e.g. "Murder"
+    statute_id: str  # e.g. "ic-35-42-1-1"
+    title: str  # e.g. "35-42-1-1"
+    full_citation: str  # e.g. "Ind. Code § 35-42-1-1"
+    subject: str  # e.g. "Murder"
     article: str
     chapter: str
     section_text: str

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from config.logging import get_logger
 
@@ -71,10 +71,10 @@ class ParsedQuery:
     case_type: str | None
     citations_mentioned: list[str]
     keywords: list[str]
-    query_type: str = "hybrid"         # "citation_lookup" | "semantic" | "hybrid"
-    bm25_weight: float = 0.5           # Suggested BM25 weight for RRF (0=all vector, 1=all BM25)
-    authority_alpha: float = 0.30      # Suggested authority blend alpha
-    temporal_filter: bool = False      # Whether to apply temporal validity filter
+    query_type: str = "hybrid"  # "citation_lookup" | "semantic" | "hybrid"
+    bm25_weight: float = 0.5  # Suggested BM25 weight for RRF (0=all vector, 1=all BM25)
+    authority_alpha: float = 0.30  # Suggested authority blend alpha
+    temporal_filter: bool = False  # Whether to apply temporal validity filter
 
 
 def parse_legal_query(query: str) -> ParsedQuery:
@@ -152,9 +152,16 @@ def _classify_query(query: str) -> tuple[str, float, float]:
 def _needs_temporal_filter(lower: str) -> bool:
     """Heuristic: does the query imply interest in *current* law?"""
     current_signals = {
-        "current", "current law", "currently", "now", "today",
-        "still valid", "still in effect", "still applies",
-        "effective", "in force",
+        "current",
+        "current law",
+        "currently",
+        "now",
+        "today",
+        "still valid",
+        "still in effect",
+        "still applies",
+        "effective",
+        "in force",
     }
     return any(sig in lower for sig in current_signals)
 
@@ -179,9 +186,30 @@ def _detect_case_type(lower: str) -> str | None:
 def _extract_keywords(query: str) -> list[str]:
     """Simple keyword extraction: remove stopwords, return unique tokens."""
     stopwords = {
-        "the", "a", "an", "is", "in", "of", "for", "on", "at", "to",
-        "and", "or", "what", "how", "when", "where", "who", "does",
-        "did", "can", "will", "my", "i", "me",
+        "the",
+        "a",
+        "an",
+        "is",
+        "in",
+        "of",
+        "for",
+        "on",
+        "at",
+        "to",
+        "and",
+        "or",
+        "what",
+        "how",
+        "when",
+        "where",
+        "who",
+        "does",
+        "did",
+        "can",
+        "will",
+        "my",
+        "i",
+        "me",
     }
     tokens = re.findall(r"\b[a-zA-Z]{3,}\b", query)
     seen: set[str] = set()

@@ -1,4 +1,5 @@
 """Authentication endpoints — login, refresh, and user info."""
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -42,6 +43,7 @@ _USERS: dict[str, dict] = {
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
+
 class LoginRequest(BaseModel):
     username: str = Field(..., min_length=1, max_length=100)
     password: str = Field(..., min_length=1, max_length=200)
@@ -53,11 +55,14 @@ class RefreshRequest(BaseModel):
 
 # ── Endpoints ────────────────────────────────────────────────────────────────
 
+
 @router.post("/token", response_model=TokenResponse)
 async def login(req: LoginRequest) -> TokenResponse:
     """Authenticate and return JWT access + refresh tokens."""
     user_record = _USERS.get(req.username)
-    if not user_record or not verify_password(req.password, user_record["hashed"], user_record["salt"]):
+    if not user_record or not verify_password(
+        req.password, user_record["hashed"], user_record["salt"]
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",

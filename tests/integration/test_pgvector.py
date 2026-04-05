@@ -5,16 +5,17 @@ They are gated behind the ``TEST_DATABASE_URL`` environment variable, which must
 point to a writable test database.
 
 Run locally:
-    TEST_DATABASE_URL="postgresql://user:pass@localhost/indyleg_test" pytest tests/integration/test_pgvector.py -v
+    TEST_DATABASE_URL="postgresql://user:pass@localhost/indyleg_test" \
+        pytest tests/integration/test_pgvector.py -v
 
 In CI the tests are automatically skipped when the variable is absent.
 """
+
 from __future__ import annotations
 
 import hashlib
 import os
 import uuid
-from typing import Any
 
 import pytest
 
@@ -32,6 +33,7 @@ TEST_DB_URL = os.environ.get("TEST_DATABASE_URL", "")
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _chunk(
     source_id: str,
@@ -58,6 +60,7 @@ def _vector(dim: int = 1536) -> list[float]:
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture()
 async def indexer():
     idx = VectorIndexer(database_url=TEST_DB_URL)
@@ -66,6 +69,7 @@ async def indexer():
 
 
 # ── upsert_batch ──────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_upsert_single_chunk_no_error(indexer: VectorIndexer):
@@ -100,6 +104,7 @@ async def test_delete_unknown_source_returns_zero(indexer: VectorIndexer):
 
 
 # ── record_version ────────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_record_version_first_call_is_new(indexer: VectorIndexer):

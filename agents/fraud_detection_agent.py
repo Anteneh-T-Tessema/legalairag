@@ -17,7 +17,7 @@ All flags are persisted with full audit trail for human investigator review.
 from __future__ import annotations
 
 import re
-from collections import Counter, defaultdict
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from typing import Any
@@ -32,31 +32,35 @@ logger = get_logger(__name__)
 
 # ── Fraud Indicators ───────────────────────────────────────────────────────────
 
+
 @dataclass
 class FraudIndicator:
     """A single detected anomaly signal."""
-    indicator_type: str          # e.g. "burst_filing", "identity_reuse", "deed_fraud"
-    severity: str                # "low" | "medium" | "high" | "critical"
+
+    indicator_type: str  # e.g. "burst_filing", "identity_reuse", "deed_fraud"
+    severity: str  # "low" | "medium" | "high" | "critical"
     description: str
-    evidence: list[str]          # source_ids or case numbers supporting this flag
-    confidence: float            # 0.0–1.0
+    evidence: list[str]  # source_ids or case numbers supporting this flag
+    confidence: float  # 0.0–1.0
     metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class FraudAnalysisResult:
     """Aggregated result of a fraud detection analysis run."""
+
     run_id: str
-    query_context: str           # What was searched to produce these filings
+    query_context: str  # What was searched to produce these filings
     total_filings_analyzed: int
     indicators: list[FraudIndicator]
-    risk_level: str              # "none" | "low" | "medium" | "high" | "critical"
+    risk_level: str  # "none" | "low" | "medium" | "high" | "critical"
     summary: str
     requires_human_review: bool
     flagged_source_ids: list[str]
 
 
 # ── Pattern Detectors ──────────────────────────────────────────────────────────
+
 
 class _FilingPatternAnalyzer:
     """
@@ -104,21 +108,25 @@ class _FilingPatternAnalyzer:
         for party, filings in party_filings.items():
             filings.sort(key=lambda x: x[0])
             # Sliding 30-day window
-            for i, (start_date, _) in enumerate(filings):
-                window = [f for f in filings if start_date <= f[0] <= start_date + timedelta(days=30)]
+            for _i, (start_date, _) in enumerate(filings):
+                window = [
+                    f for f in filings if start_date <= f[0] <= start_date + timedelta(days=30)
+                ]
                 if len(window) >= 6:
                     evidences = [f[1] for f in window]
-                    indicators.append(FraudIndicator(
-                        indicator_type="burst_filing",
-                        severity="medium" if len(window) < 10 else "high",
-                        description=(
-                            f"Party '{party}' filed {len(window)} cases in 30 days "
-                            f"starting {start_date.isoformat()}."
-                        ),
-                        evidence=evidences,
-                        confidence=min(0.6 + (len(window) - 6) * 0.05, 0.95),
-                        metadata={"party": party, "window_start": start_date.isoformat()},
-                    ))
+                    indicators.append(
+                        FraudIndicator(
+                            indicator_type="burst_filing",
+                            severity="medium" if len(window) < 10 else "high",
+                            description=(
+                                f"Party '{party}' filed {len(window)} cases in 30 days "
+                                f"starting {start_date.isoformat()}."
+                            ),
+                            evidence=evidences,
+                            confidence=min(0.6 + (len(window) - 6) * 0.05, 0.95),
+                            metadata={"party": party, "window_start": start_date.isoformat()},
+                        )
+                    )
                     break  # Report once per party
 
         return indicators
@@ -136,7 +144,9 @@ class _FilingPatternAnalyzer:
         # Extract SSN fragments (last 4 digits pattern), DOBs, addresses
         ssn_fragment_re = re.compile(r"\bXXX-XX-(\d{4})\b")
         dob_re = re.compile(r"\b(?:DOB|born)[:\s]+(\d{1,2}/\d{1,2}/\d{2,4})\b", re.IGNORECASE)
-        address_re = re.compile(r"\b\d{3,5}\s+[A-Z][a-z]+\s+(?:St|Ave|Blvd|Dr|Ln|Rd|Way)\b", re.IGNORECASE)
+        address_re = re.compile(
+            r"\b\d{3,5}\s+[A-Z][a-z]+\s+(?:St|Ave|Blvd|Dr|Ln|Rd|Way)\b", re.IGNORECASE
+        )
 
         ssn_to_cases: dict[str, list[str]] = defaultdict(list)
         dob_to_cases: dict[str, list[str]] = defaultdict(list)
@@ -154,26 +164,36 @@ class _FilingPatternAnalyzer:
         for fragment, case_ids in ssn_to_cases.items():
             unique_cases = list(set(case_ids))
             if len(unique_cases) > 2:
-                indicators.append(FraudIndicator(
-                    indicator_type="identity_reuse",
-                    severity="high",
-                    description=f"SSN fragment ...{fragment} appears in {len(unique_cases)} separate cases.",
-                    evidence=unique_cases,
-                    confidence=0.75,
-                    metadata={"identifier_type": "ssn_fragment"},
-                ))
+                indicators.append(
+                    FraudIndicator(
+                        indicator_type="identity_reuse",
+                        severity="high",
+                        description=(
+                            f"SSN fragment ...{fragment} appears in "
+                            f"{len(unique_cases)} separate cases."
+                        ),
+                        evidence=unique_cases,
+                        confidence=0.75,
+                        metadata={"identifier_type": "ssn_fragment"},
+                    )
+                )
 
         for dob, case_ids in dob_to_cases.items():
             unique_cases = list(set(case_ids))
             if len(unique_cases) > 3:
-                indicators.append(FraudIndicator(
-                    indicator_type="identity_reuse",
-                    severity="medium",
-                    description=f"Date of birth {dob} appears in {len(unique_cases)} separate cases.",
-                    evidence=unique_cases,
-                    confidence=0.55,
-                    metadata={"identifier_type": "dob"},
-                ))
+                indicators.append(
+                    FraudIndicator(
+                        indicator_type="identity_reuse",
+                        severity="medium",
+                        description=(
+                            f"Date of birth {dob} appears in "
+                            f"{len(unique_cases)} separate cases."
+                        ),
+                        evidence=unique_cases,
+                        confidence=0.55,
+                        metadata={"identifier_type": "dob"},
+                    )
+                )
 
         return indicators
 
@@ -188,22 +208,31 @@ class _FilingPatternAnalyzer:
         indicators: list[FraudIndicator] = []
 
         quitclaim_re = re.compile(r"\bquitclaim\s+deed\b", re.IGNORECASE)
-        nominal_re = re.compile(r"\bfor\s+(?:the\s+sum\s+of\s+)?\$(?:1|10|100)\.?00?\b", re.IGNORECASE)
+        nominal_re = re.compile(
+            r"\bfor\s+(?:the\s+sum\s+of\s+)?\$(?:1|10|100)\.?00?\b", re.IGNORECASE
+        )
 
-        quitclaim_cases = [r.source_id for r in results if quitclaim_re.search(r.content) and nominal_re.search(r.content)]
+        quitclaim_cases = [
+            r.source_id
+            for r in results
+            if quitclaim_re.search(r.content) and nominal_re.search(r.content)
+        ]
 
         if len(quitclaim_cases) >= 3:
-            indicators.append(FraudIndicator(
-                indicator_type="deed_fraud_pattern",
-                severity="high",
-                description=(
-                    f"Found {len(quitclaim_cases)} quitclaim deeds with nominal consideration ($1-$100), "
-                    "a common deed fraud pattern."
-                ),
-                evidence=quitclaim_cases,
-                confidence=0.80,
-                metadata={"deed_type": "quitclaim", "consideration": "nominal"},
-            ))
+            indicators.append(
+                FraudIndicator(
+                    indicator_type="deed_fraud_pattern",
+                    severity="high",
+                    description=(
+                        f"Found {len(quitclaim_cases)} quitclaim deeds "
+                        "with nominal consideration ($1-$100), "
+                        "a common deed fraud pattern."
+                    ),
+                    evidence=quitclaim_cases,
+                    confidence=0.80,
+                    metadata={"deed_type": "quitclaim", "consideration": "nominal"},
+                )
+            )
 
         return indicators
 
@@ -216,7 +245,7 @@ class _FilingPatternAnalyzer:
         - Foreign shell company patterns (common in deed fraud)
         """
         indicators: list[FraudIndicator] = []
-        shell_re = re.compile(
+        re.compile(
             r"\b(?:LLC|L\.L\.C\.|Inc\.|Corp\.|Ltd\.?)\s*$",
             re.IGNORECASE | re.MULTILINE,
         )
@@ -230,14 +259,19 @@ class _FilingPatternAnalyzer:
                     break
 
         if len(suspicious) >= 2:
-            indicators.append(FraudIndicator(
-                indicator_type="suspicious_entity",
-                severity="medium",
-                description=f"Found {len(suspicious)} cases with numerically-named entities (e.g. 'Entity 42 LLC').",
-                evidence=list(set(suspicious)),
-                confidence=0.50,
-                metadata={"pattern": "numeric_entity_name"},
-            ))
+            indicators.append(
+                FraudIndicator(
+                    indicator_type="suspicious_entity",
+                    severity="medium",
+                    description=(
+                        f"Found {len(suspicious)} cases with "
+                        "numerically-named entities (e.g. 'Entity 42 LLC')."
+                    ),
+                    evidence=list(set(suspicious)),
+                    confidence=0.50,
+                    metadata={"pattern": "numeric_entity_name"},
+                )
+            )
 
         return indicators
 
@@ -250,7 +284,9 @@ class _FilingPatternAnalyzer:
         indicators: list[FraudIndicator] = []
 
         # Group by property address (extracted from content)
-        address_re = re.compile(r"\b(\d{3,5}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*,?\s*(?:Indianapolis|Indiana)\b")
+        address_re = re.compile(
+            r"\b(\d{3,5}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*,?\s*(?:Indianapolis|Indiana)\b"
+        )
         addr_to_filings: dict[str, list[tuple[date, str]]] = defaultdict(list)
 
         for r in results:
@@ -269,21 +305,25 @@ class _FilingPatternAnalyzer:
                 filings.sort(key=lambda x: x[0])
                 span = (filings[-1][0] - filings[0][0]).days
                 if span <= 90:
-                    indicators.append(FraudIndicator(
-                        indicator_type="rapid_ownership_transfer",
-                        severity="high",
-                        description=(
-                            f"Property '{addr}' transferred {len(filings)} times in {span} days."
-                        ),
-                        evidence=[s for _, s in filings],
-                        confidence=0.70,
-                        metadata={"address": addr, "span_days": span},
-                    ))
+                    indicators.append(
+                        FraudIndicator(
+                            indicator_type="rapid_ownership_transfer",
+                            severity="high",
+                            description=(
+                                f"Property '{addr}' transferred "
+                                f"{len(filings)} times in {span} days."
+                            ),
+                            evidence=[s for _, s in filings],
+                            confidence=0.70,
+                            metadata={"address": addr, "span_days": span},
+                        )
+                    )
 
         return indicators
 
 
 # ── Fraud Detection Agent ──────────────────────────────────────────────────────
+
 
 class FraudDetectionAgent(BaseAgent):
     """
@@ -322,6 +362,7 @@ class FraudDetectionAgent(BaseAgent):
         # Step 1: Parse + embed query
         self._record_tool_call("query_parse", {"query": query})
         from retrieval.query_parser import parse_legal_query
+
         parsed = parse_legal_query(query)
 
         self._record_tool_call("embed", {"query": parsed.normalized})
@@ -377,7 +418,9 @@ class FraudDetectionAgent(BaseAgent):
         severities = [i.severity for i in indicators]
         if "critical" in severities:
             return "critical"
-        if severities.count("high") >= 2 or (severities.count("high") >= 1 and len(indicators) >= 3):
+        if severities.count("high") >= 2 or (
+            severities.count("high") >= 1 and len(indicators) >= 3
+        ):
             return "critical"
         if "high" in severities:
             return "high"
@@ -396,7 +439,8 @@ class FraudDetectionAgent(BaseAgent):
         """Generate a plain-language investigation memo via Bedrock."""
         if not indicators:
             return (
-                f"Analysis of {len(candidates)} filings for query '{query}' found no fraud indicators. "
+                f"Analysis of {len(candidates)} filings for query "
+                f"'{query}' found no fraud indicators. "
                 "Standard monitoring recommends periodic re-analysis as new filings occur."
             )
 
@@ -423,8 +467,10 @@ Write a 3-5 sentence investigation memo that:
 Do not speculate beyond the evidence. Use professional, neutral tone."""
 
         try:
-            from generation.bedrock_client import BedrockLLMClient
             import asyncio
+
+            from generation.bedrock_client import BedrockLLMClient
+
             client = BedrockLLMClient()
             loop = asyncio.get_event_loop()
             summary = await loop.run_in_executor(
@@ -438,4 +484,8 @@ Do not speculate beyond the evidence. Use professional, neutral tone."""
             return summary
         except Exception as exc:
             logger.warning("fraud_summary_generation_failed", error=str(exc))
-            return f"Detected {len(indicators)} indicator(s). Risk level: {self._compute_risk_level(indicators)}. Manual review required."
+            risk = self._compute_risk_level(indicators)
+            return (
+                f"Detected {len(indicators)} indicator(s). "
+                f"Risk level: {risk}. Manual review required."
+            )

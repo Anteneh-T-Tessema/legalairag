@@ -7,12 +7,12 @@ psycopg is mocked at sys.modules level before any import that transitively
 pulls it in, because the local PostgreSQL install is x86_64 and psycopg requires
 an arm64 libpq on Apple Silicon.
 """
+
 from __future__ import annotations
 
 import asyncio
 import sys
 import types
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -35,8 +35,8 @@ sys.modules.setdefault("pgvector.psycopg", _pgvector_psycopg_mock)
 from ingestion.pipeline.worker import IngestionWorker  # noqa: E402
 from ingestion.queue.sqs import IngestionMessage  # noqa: E402
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 def _make_message(source_id: str = "src-001") -> IngestionMessage:
     return IngestionMessage(
@@ -69,6 +69,7 @@ def _make_worker() -> IngestionWorker:
 
 # ── Deduplication (core logic) ────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_unchanged_document_skips_embedding():
     """If record_version returns is_new_version=False, upsert_batch must NOT run."""
@@ -84,7 +85,6 @@ async def test_unchanged_document_skips_embedding():
     worker._chunker.chunk = MagicMock(return_value=[])
     worker._embedder.embed_chunks = AsyncMock(return_value=[])
 
-    from ingestion.sources.document_loader import load_from_bytes  # noqa: PLC0415
     with patch("ingestion.pipeline.worker.load_from_bytes") as mock_load:
         mock_load.return_value = MagicMock()
         await worker._process(message)
@@ -177,9 +177,7 @@ async def test_chunks_passed_to_embedder():
     worker._download = AsyncMock(return_value=b"doc")
     worker._indexer.record_version = AsyncMock(return_value=("v1", True))
     worker._chunker.chunk = MagicMock(return_value=[chunk_a, chunk_b])
-    worker._embedder.embed_chunks = AsyncMock(
-        return_value=[(chunk_a, [0.1]), (chunk_b, [0.2])]
-    )
+    worker._embedder.embed_chunks = AsyncMock(return_value=[(chunk_a, [0.1]), (chunk_b, [0.2])])
     worker._indexer.upsert_batch = AsyncMock()
 
     with patch("ingestion.pipeline.worker.load_from_bytes") as mock_load:

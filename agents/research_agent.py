@@ -18,7 +18,7 @@ class ResearchResult:
     answer: str
     source_ids: list[str]
     jurisdiction: str | None
-    confidence: str        # "High" | "Medium" | "Low"
+    confidence: str  # "High" | "Medium" | "Low"
     citations: list[str]
     run_id: str
 
@@ -90,7 +90,7 @@ class CaseResearchAgent(BaseAgent):
             "authority_rank",
             {"alpha": parsed.authority_alpha, "result_count": len(ranked)},
         )
-        ranked = self._authority.rank(ranked, alpha=parsed.authority_alpha)
+        ranked = self._authority.rerank(ranked, alpha=parsed.authority_alpha)
 
         # Step 5: Generate
         self._record_tool_call("generate", {"context_count": len(ranked)})
@@ -102,9 +102,7 @@ class CaseResearchAgent(BaseAgent):
 
         confidence = _estimate_confidence(ranked)
 
-        all_citations = list(
-            {c for chunk in ranked for c in chunk.citations}
-        )
+        all_citations = list({c for chunk in ranked for c in chunk.citations})
 
         return ResearchResult(
             query=query,
@@ -133,6 +131,7 @@ def _estimate_confidence(ranked_results: list) -> str:
     top = scores[0]
 
     import statistics
+
     median = statistics.median(scores) if len(scores) > 1 else top
     gap = top - median
 

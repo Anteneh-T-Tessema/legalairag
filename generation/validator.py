@@ -17,7 +17,7 @@ class ValidationResult:
     is_valid: bool
     cited_source_ids: list[str]
     uncited_claims: list[str]
-    missing_citations: list[str]   # cited in output but not in context
+    missing_citations: list[str]  # cited in output but not in context
     warnings: list[str] = field(default_factory=list)
 
 

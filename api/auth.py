@@ -1,18 +1,18 @@
 """JWT-based authentication for the IndyLeg API."""
+
 from __future__ import annotations
 
 import hashlib
 import hmac
 import secrets
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import StrEnum
 from typing import Annotated, Any
 
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel
-
-import jwt
 
 from config.settings import settings
 
@@ -28,6 +28,7 @@ _security = HTTPBearer()
 
 # ── Roles ────────────────────────────────────────────────────────────────────
 
+
 class Role(StrEnum):
     ADMIN = "admin"
     ATTORNEY = "attorney"
@@ -37,19 +38,20 @@ class Role(StrEnum):
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
 
+
 class TokenPayload(BaseModel):
-    sub: str            # username
+    sub: str  # username
     role: Role
     exp: datetime
     iat: datetime
-    jti: str            # unique token id
+    jti: str  # unique token id
 
 
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
-    token_type: str = "bearer"
-    expires_in: int     # seconds
+    token_type: str = "bearer"  # noqa: S105
+    expires_in: int  # seconds
 
 
 class UserInfo(BaseModel):
@@ -58,6 +60,7 @@ class UserInfo(BaseModel):
 
 
 # ── Password hashing (HMAC-SHA256 with per-user salt) ────────────────────────
+
 
 def hash_password(password: str, salt: str | None = None) -> tuple[str, str]:
     """Return (hashed, salt). Uses HMAC-SHA256 with a random 32-byte salt."""
@@ -78,8 +81,9 @@ def verify_password(password: str, hashed: str, salt: str) -> bool:
 
 # ── Token creation ───────────────────────────────────────────────────────────
 
+
 def create_access_token(username: str, role: Role) -> str:
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     payload: dict[str, Any] = {
         "sub": username,
         "role": role.value,
@@ -91,7 +95,7 @@ def create_access_token(username: str, role: Role) -> str:
 
 
 def create_refresh_token(username: str) -> str:
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     payload: dict[str, Any] = {
         "sub": username,
         "type": "refresh",
@@ -112,26 +116,31 @@ def create_token_pair(username: str, role: Role) -> TokenResponse:
 
 # ── Token verification ──────────────────────────────────────────────────────
 
+
 def decode_token(token: str) -> TokenPayload:
     try:
         data = jwt.decode(token, _SECRET, algorithms=[_ALGORITHM])
         return TokenPayload(
             sub=data["sub"],
             role=Role(data["role"]),
-            exp=datetime.fromtimestamp(data["exp"], tz=UTC),
-            iat=datetime.fromtimestamp(data["iat"], tz=UTC),
+            exp=datetime.fromtimestamp(data["exp"], tz=timezone.utc),
+            iat=datetime.fromtimestamp(data["iat"], tz=timezone.utc),
             jti=data["jti"],
         )
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
+    except jwt.ExpiredSignatureError as err:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token expired",
+        ) from err
     except (jwt.InvalidTokenError, KeyError, ValueError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid token: {exc}",
-        )
+        ) from exc
 
 
 # ── FastAPI dependency ───────────────────────────────────────────────────────
+
 
 async def get_current_user(
     creds: Annotated[HTTPAuthorizationCredentials, Depends(_security)],
@@ -143,6 +152,7 @@ async def get_current_user(
 
 def require_role(*allowed: Role):
     """Factory for role-gating dependencies."""
+
     async def _check(user: Annotated[UserInfo, Depends(get_current_user)]) -> UserInfo:
         if user.role not in allowed:
             raise HTTPException(
@@ -150,4 +160,5 @@ def require_role(*allowed: Role):
                 detail=f"Role '{user.role}' not authorized. Required: {[r.value for r in allowed]}",
             )
         return user
+
     return _check

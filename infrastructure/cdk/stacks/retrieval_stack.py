@@ -2,10 +2,16 @@ from __future__ import annotations
 
 import aws_cdk as cdk
 from aws_cdk import (
-    aws_rds as rds,
-    aws_ec2 as ec2,
-    aws_opensearchservice as opensearch,
     RemovalPolicy,
+)
+from aws_cdk import (
+    aws_ec2 as ec2,
+)
+from aws_cdk import (
+    aws_opensearchservice as opensearch,
+)
+from aws_cdk import (
+    aws_rds as rds,
 )
 from constructs import Construct
 
@@ -30,9 +36,10 @@ class RetrievalStack(cdk.Stack):
             engine=rds.DatabaseClusterEngine.aurora_postgres(
                 version=rds.AuroraPostgresEngineVersion.VER_16_2
             ),
-            writer=rds.ClusterInstance.provisioned("Writer", instance_type=ec2.InstanceType.of(
-                ec2.InstanceClass.R6G, ec2.InstanceSize.LARGE
-            )),
+            writer=rds.ClusterInstance.provisioned(
+                "Writer",
+                instance_type=ec2.InstanceType.of(ec2.InstanceClass.R6G, ec2.InstanceSize.LARGE),
+            ),
             vpc=self.vpc,
             vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
             removal_policy=RemovalPolicy.SNAPSHOT,

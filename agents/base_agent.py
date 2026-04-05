@@ -14,6 +14,7 @@ logger = get_logger(__name__)
 @dataclass
 class AgentRun:
     """Immutable audit record for a single agent execution."""
+
     run_id: str
     agent_name: str
     input_summary: str
@@ -40,7 +41,7 @@ class BaseAgent(ABC):
     traceable — this base class enforces that at the framework level.
     """
 
-    allowed_tools: list[str] = []   # subclasses declare permitted tools
+    allowed_tools: list[str] = []  # subclasses declare permitted tools
 
     def __init__(self) -> None:
         self._tool_log: list[dict[str, Any]] = []
@@ -88,12 +89,16 @@ class BaseAgent(ABC):
 
     def _record_tool_call(self, tool: str, inputs: dict[str, Any]) -> None:
         if tool not in self.allowed_tools:
-            raise PermissionError(f"Agent {self.__class__.__name__} is not permitted to use tool '{tool}'")
-        self._tool_log.append({
-            "tool": tool,
-            "inputs": inputs,
-            "timestamp": datetime.now(tz=timezone.utc).isoformat(),
-        })
+            raise PermissionError(
+                f"Agent {self.__class__.__name__} is not permitted to use tool '{tool}'"
+            )
+        self._tool_log.append(
+            {
+                "tool": tool,
+                "inputs": inputs,
+                "timestamp": datetime.now(tz=timezone.utc).isoformat(),
+            }
+        )
 
     async def _persist_run(
         self,

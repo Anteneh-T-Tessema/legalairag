@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from rank_bm25 import BM25Okapi
 
-from config.settings import settings
 from config.logging import get_logger
+from config.settings import settings
 
 logger = get_logger(__name__)
 
@@ -155,7 +155,7 @@ class HybridSearcher:
         scores = bm25.get_scores(query.lower().split())
 
         ranked = sorted(
-            zip(candidates, scores),
+            zip(candidates, scores, strict=False),
             key=lambda x: x[1],
             reverse=True,
         )
@@ -207,6 +207,7 @@ class HybridSearcher:
         if self._conn is None or self._conn.closed:
             import psycopg  # noqa: PLC0415
             from pgvector.psycopg import register_vector  # noqa: PLC0415
+
             self._conn = await psycopg.AsyncConnection.connect(self._database_url)
             await register_vector(self._conn)
         return self._conn

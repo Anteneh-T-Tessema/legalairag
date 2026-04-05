@@ -46,7 +46,9 @@ class SummarizationAgent(BaseAgent):
 
         # Tool: load document
         self._record_tool_call("load_document", {"source_id": source_id, "filename": filename})
-        doc = load_from_bytes(content=content, source_id=source_id, filename=filename, metadata=metadata)
+        doc = load_from_bytes(
+            content=content, source_id=source_id, filename=filename, metadata=metadata
+        )
 
         # Tool: generate summary
         self._record_tool_call("generate_summary", {"source_id": source_id, "doc_type": doc_type})
@@ -58,7 +60,10 @@ class SummarizationAgent(BaseAgent):
         raw = await loop.run_in_executor(
             None,
             lambda: self._llm.complete(
-                system="You are a precise legal document analyst. Extract structured information only.",
+                system=(
+                    "You are a precise legal document analyst. "
+                    "Extract structured information only."
+                ),
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.0,
             ),
@@ -75,17 +80,22 @@ class SummarizationAgent(BaseAgent):
 
 def _extract_parties(text: str) -> list[str]:
     import re
-    matches = re.findall(r"(?:Plaintiff|Defendant|Petitioner|Respondent)[:\s]+([A-Z][A-Za-z\s,\.]+)", text)
+
+    matches = re.findall(
+        r"(?:Plaintiff|Defendant|Petitioner|Respondent)[:\s]+([A-Z][A-Za-z\s,\.]+)", text
+    )
     return [m.strip() for m in matches]
 
 
 def _extract_citations(text: str) -> list[str]:
     import re
+
     return re.findall(r"Ind(?:iana)?\.?\s*Code\s*§\s*[\d\-\.]+|I\.C\.\s*§\s*[\d\-\.]+", text)
 
 
 def _extract_deadlines(text: str) -> list[str]:
     import re
+
     return re.findall(
         r"\b(?:within \d+ days?|by [A-Z][a-z]+ \d{1,2},?\s*\d{4}|deadline[:\s]+[^\n\.]+)\b",
         text,

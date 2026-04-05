@@ -2,13 +2,20 @@ from __future__ import annotations
 
 import aws_cdk as cdk
 from aws_cdk import (
-    aws_s3 as s3,
-    aws_sqs as sqs,
-    aws_ecs as ecs,
-    aws_ecs_patterns as ecs_patterns,
-    aws_iam as iam,
     Duration,
     RemovalPolicy,
+)
+from aws_cdk import (
+    aws_ecs as ecs,
+)
+from aws_cdk import (
+    aws_iam as iam,
+)
+from aws_cdk import (
+    aws_s3 as s3,
+)
+from aws_cdk import (
+    aws_sqs as sqs,
 )
 from constructs import Construct
 
@@ -73,7 +80,7 @@ class IngestionStack(cdk.Stack):
         )
 
         # ── ECS Worker ────────────────────────────────────────────────────────
-        cluster = ecs.Cluster(self, "IngestionCluster")
+        ecs.Cluster(self, "IngestionCluster")
 
         worker_task = ecs.FargateTaskDefinition(
             self,
@@ -84,7 +91,9 @@ class IngestionStack(cdk.Stack):
 
         worker_task.add_container(
             "WorkerContainer",
-            image=ecs.ContainerImage.from_asset("../../", file="infrastructure/docker/Dockerfile.worker"),
+            image=ecs.ContainerImage.from_asset(
+                "../../", file="infrastructure/docker/Dockerfile.worker"
+            ),
             environment={
                 "SQS_INGESTION_QUEUE_URL": self.ingestion_queue.queue_url,
                 "S3_BUCKET_RAW": self.raw_bucket.bucket_name,

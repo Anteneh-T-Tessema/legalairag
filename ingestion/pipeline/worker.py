@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
 
 import boto3
 
-from config.settings import settings
 from config.logging import get_logger
-from ingestion.pipeline.chunker import Chunk, LegalChunker
+from config.settings import settings
+from ingestion.pipeline.chunker import LegalChunker
 from ingestion.pipeline.embedder import BedrockEmbedder
 from ingestion.queue.sqs import IngestionMessage, SQSConsumer
 from ingestion.sources.document_loader import load_from_bytes
@@ -50,9 +49,7 @@ class IngestionWorker:
         tasks: set[asyncio.Task[None]] = set()
 
         async for message, receipt_handle in self._consumer.receive():
-            task = asyncio.create_task(
-                self._process_with_ack(message, receipt_handle)
-            )
+            task = asyncio.create_task(self._process_with_ack(message, receipt_handle))
             tasks.add(task)
             task.add_done_callback(tasks.discard)
 
@@ -60,9 +57,7 @@ class IngestionWorker:
             if len(tasks) >= self._concurrency:
                 await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
-    async def _process_with_ack(
-        self, message: IngestionMessage, receipt_handle: str
-    ) -> None:
+    async def _process_with_ack(self, message: IngestionMessage, receipt_handle: str) -> None:
         async with self._semaphore:
             try:
                 await self._process(message)

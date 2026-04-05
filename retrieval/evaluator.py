@@ -38,6 +38,7 @@ logger = get_logger(__name__)
 
 # ── Evaluation Dataset ─────────────────────────────────────────────────────────
 
+
 @dataclass
 class EvalExample:
     """
@@ -71,7 +72,7 @@ class EvalDataset:
     description: str = ""
 
     @classmethod
-    def from_json(cls, path: str | Path) -> "EvalDataset":
+    def from_json(cls, path: str | Path) -> EvalDataset:
         """Load evaluation dataset from a JSON file."""
         with open(path) as f:
             data = json.load(f)
@@ -121,6 +122,7 @@ class EvalDataset:
 
 # ── Per-example result ─────────────────────────────────────────────────────────
 
+
 @dataclass
 class ExampleResult:
     query_id: str
@@ -136,11 +138,12 @@ class ExampleResult:
     faithfulness_score: float
     # Raw signals for debugging
     relevant_ids: list[str]
-    missing_relevant: list[str]   # relevant docs NOT retrieved in top-K
+    missing_relevant: list[str]  # relevant docs NOT retrieved in top-K
     hallucinated_citations: list[str]
 
 
 # ── Aggregate report ───────────────────────────────────────────────────────────
+
 
 @dataclass
 class EvaluationReport:
@@ -158,9 +161,9 @@ class EvaluationReport:
 
     def print_summary(self) -> None:
         """Print a concise evaluation summary to stdout."""
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"EVALUATION REPORT — {self.dataset_name}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"Examples evaluated : {self.num_examples}")
         print(f"MRR                : {self.mrr:.4f}")
         for k in self.k_values:
@@ -171,7 +174,7 @@ class EvaluationReport:
             )
         print(f"Citation Accuracy  : {self.mean_citation_accuracy:.4f}")
         print(f"Faithfulness       : {self.mean_faithfulness:.4f}")
-        print(f"{'='*60}\n")
+        print(f"{'=' * 60}\n")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -187,6 +190,7 @@ class EvaluationReport:
 
 
 # ── Core metric functions ──────────────────────────────────────────────────────
+
 
 def recall_at_k(retrieved: list[str], relevant: list[str], k: int) -> float:
     """Fraction of relevant documents retrieved in the top-K results."""
@@ -259,6 +263,7 @@ def faithfulness_score(answer: str, retrieved_texts: list[str]) -> float:
 
     # Extract legal-specific noun phrases as "claims"
     import re
+
     claim_pattern = re.compile(
         r"(?:Ind(?:iana)?\.?\s*Code\s*§\s*[\d\-\.]+|"
         r"\d+\s+(?:F\.\d+|Ind\.?|N\.E\.(?:2d|3d)?)\s+\d+|"
@@ -267,7 +272,10 @@ def faithfulness_score(answer: str, retrieved_texts: list[str]) -> float:
     claims = claim_pattern.findall(answer)
     if not claims:
         # Fall back to key legal terms
-        legal_terms = re.findall(r"\b(?:statute|section|holding|court|affirmed|reversed|remanded|enjoined|convicted)\b", answer.lower())
+        legal_terms = re.findall(
+            r"\b(?:statute|section|holding|court|affirmed|reversed|remanded|enjoined|convicted)\b",
+            answer.lower(),
+        )
         claims = legal_terms
 
     if not claims:
@@ -279,6 +287,7 @@ def faithfulness_score(answer: str, retrieved_texts: list[str]) -> float:
 
 
 # ── RAG Evaluator ─────────────────────────────────────────────────────────────
+
 
 class RAGEvaluator:
     """
@@ -374,8 +383,12 @@ class RAGEvaluator:
         relevant_set = set(example.relevant_source_ids)
         max_k = max(self._k_values)
 
-        recall = {k: recall_at_k(retrieved_ids, example.relevant_source_ids, k) for k in self._k_values}
-        precision = {k: precision_at_k(retrieved_ids, example.relevant_source_ids, k) for k in self._k_values}
+        recall = {
+            k: recall_at_k(retrieved_ids, example.relevant_source_ids, k) for k in self._k_values
+        }
+        precision = {
+            k: precision_at_k(retrieved_ids, example.relevant_source_ids, k) for k in self._k_values
+        }
 
         # Use graded_relevance if available; otherwise binary
         graded = example.graded_relevance or {sid: 1 for sid in example.relevant_source_ids}
@@ -422,7 +435,9 @@ class RAGEvaluator:
             )
 
         mean_recall = {k: sum(r.recall_at_k.get(k, 0) for r in results) / n for k in self._k_values}
-        mean_precision = {k: sum(r.precision_at_k.get(k, 0) for r in results) / n for k in self._k_values}
+        mean_precision = {
+            k: sum(r.precision_at_k.get(k, 0) for r in results) / n for k in self._k_values
+        }
         mean_ndcg = {k: sum(r.ndcg_at_k.get(k, 0) for r in results) / n for k in self._k_values}
         mrr = sum(r.reciprocal_rank for r in results) / n
         mean_cite_acc = sum(r.citation_accuracy for r in results) / n

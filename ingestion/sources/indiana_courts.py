@@ -8,8 +8,8 @@ from typing import Any
 
 import httpx
 
-from config.settings import settings
 from config.logging import get_logger
+from config.settings import settings
 
 logger = get_logger(__name__)
 
@@ -23,10 +23,10 @@ class CourtCase:
     case_number: str
     court: str
     filing_date: date
-    case_type: str          # e.g. "Civil", "Criminal", "Family"
+    case_type: str  # e.g. "Civil", "Criminal", "Family"
     parties: list[str]
     summary: str
-    jurisdiction: str       # e.g. "Marion County", "Hamilton County"
+    jurisdiction: str  # e.g. "Marion County", "Hamilton County"
     documents: list[CaseDocument] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -35,7 +35,7 @@ class CourtCase:
 class CaseDocument:
     doc_id: str
     case_number: str
-    doc_type: str           # "Complaint", "Order", "Judgment", etc.
+    doc_type: str  # "Complaint", "Order", "Judgment", etc.
     filed_date: date
     download_url: str
     description: str = ""
@@ -63,7 +63,7 @@ class IndianaCourtClient:
             timeout=timeout,
         )
 
-    async def __aenter__(self) -> "IndianaCourtClient":
+    async def __aenter__(self) -> IndianaCourtClient:
         return self
 
     async def __aexit__(self, *_: Any) -> None:
@@ -130,7 +130,7 @@ class IndianaCourtClient:
                 try:
                     resp = await self._client.get(path, params=params)
                     if resp.status_code == 429:
-                        wait = 2 ** attempt
+                        wait = 2**attempt
                         logger.warning("rate_limited", path=path, wait=wait)
                         await asyncio.sleep(wait)
                         continue

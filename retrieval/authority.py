@@ -28,9 +28,8 @@ Two components:
 
 from __future__ import annotations
 
-import re
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
@@ -142,6 +141,7 @@ class AuthorityRanker:
 
 # ── Temporal Validity ─────────────────────────────────────────────────────────
 
+
 def is_temporally_valid(metadata: dict[str, Any], reference_date: date | None = None) -> bool:
     """
     Check if a document is temporally valid relative to a reference date.
@@ -219,7 +219,7 @@ _POSITIVE_TREATMENT = {
 class CitationEdge:
     citing_id: str
     cited_id: str
-    treatment: str          # "cited" | "followed" | "overruled" | "distinguished" | ...
+    treatment: str  # "cited" | "followed" | "overruled" | "distinguished" | ...
     is_negative: bool
     date_cited: date | None = None
     context_snippet: str = ""
@@ -232,7 +232,7 @@ class NodeMetadata:
     court_level: str
     date_filed: date | None
     case_name: str
-    citation_string: str    # e.g. "123 F.3d 456"
+    citation_string: str  # e.g. "123 F.3d 456"
     is_good_law: bool = True
     overruled_by: str | None = None
     pagerank_score: float = 0.0
@@ -257,8 +257,8 @@ class CitationGraph:
 
     def __init__(self) -> None:
         self._nodes: dict[str, NodeMetadata] = {}
-        self._edges_out: dict[str, list[CitationEdge]] = defaultdict(list)   # citing → cited
-        self._edges_in: dict[str, list[CitationEdge]] = defaultdict(list)    # cited → citing
+        self._edges_out: dict[str, list[CitationEdge]] = defaultdict(list)  # citing → cited
+        self._edges_in: dict[str, list[CitationEdge]] = defaultdict(list)  # cited → citing
         self._citation_str_to_id: dict[str, str] = {}  # "123 F.3d 456" → source_id
 
     def add_node(self, metadata: NodeMetadata) -> None:

@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 from aws_cdk import App
-
+from stacks.api_stack import ApiStack
 from stacks.ingestion_stack import IngestionStack
 from stacks.retrieval_stack import RetrievalStack
-from stacks.api_stack import ApiStack
 
 app = App()
 

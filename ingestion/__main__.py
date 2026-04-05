@@ -1,4 +1,5 @@
 """Entry point for running the ingestion worker as a module: python -m ingestion.pipeline.worker"""
+
 from __future__ import annotations
 
 import asyncio

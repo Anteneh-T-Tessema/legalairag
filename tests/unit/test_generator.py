@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from generation.validator import validate_generated_output
 from retrieval.hybrid_search import SearchResult
 
@@ -44,7 +43,9 @@ class TestValidator:
 
     def test_fallback_response_detected(self) -> None:
         chunks = _mock_chunks([])
-        text = "The provided documents do not contain sufficient information to answer this question."
+        text = (
+            "The provided documents do not contain sufficient information to answer this question."
+        )
         result = validate_generated_output(text, chunks)
         assert "fallback_response_detected" in result.warnings
 

@@ -78,7 +78,7 @@ class LegalChunker:
         overlap_tokens: int = 64,
         min_chunk_chars: int = 100,
     ) -> None:
-        self.max_chars = max_tokens * 4         # rough char budget
+        self.max_chars = max_tokens * 4  # rough char budget
         self.overlap_chars = overlap_tokens * 4
         self.min_chunk_chars = min_chunk_chars
 
@@ -108,9 +108,7 @@ class LegalChunker:
 
     # ── Section splitting ────────────────────────────────────────────────────
 
-    def _split_into_sections(
-        self, text: str
-    ) -> list[tuple[str, str, int]]:
+    def _split_into_sections(self, text: str) -> list[tuple[str, str, int]]:
         """
         Returns list of (header, body, char_offset) tuples.
         Falls back to a single section if no headers are detected.

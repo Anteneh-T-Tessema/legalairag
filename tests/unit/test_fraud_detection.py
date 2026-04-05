@@ -1,16 +1,15 @@
 """Unit tests for agents.fraud_detection_agent._FilingPatternAnalyzer."""
+
 from __future__ import annotations
 
 from datetime import date, timedelta
 from typing import Any
 
-import pytest
-
-from agents.fraud_detection_agent import _FilingPatternAnalyzer, FraudIndicator
+from agents.fraud_detection_agent import FraudIndicator, _FilingPatternAnalyzer
 from retrieval.hybrid_search import SearchResult
 
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 def _result(
     source_id: str,
@@ -57,6 +56,7 @@ def _deed(i: int, amount: str = "$1.00") -> SearchResult:
 
 
 # ── _detect_burst_filing ──────────────────────────────────────────────────────
+
 
 def test_burst_detected_above_threshold():
     indicators = _FilingPatternAnalyzer._detect_burst_filing(_burst(7))
@@ -123,6 +123,7 @@ def test_burst_assigns_evidence_source_ids():
 
 # ── _detect_deed_fraud_patterns ───────────────────────────────────────────────
 
+
 def test_deed_fraud_detected_at_threshold():
     results = [_deed(i) for i in range(3)]
     indicators = _FilingPatternAnalyzer._detect_deed_fraud_patterns(results)
@@ -161,10 +162,10 @@ def test_deed_fraud_evidence_contains_source_ids():
 
 # ── _detect_identity_reuse ────────────────────────────────────────────────────
 
+
 def test_identity_reuse_ssn_in_three_cases():
     results = [
-        _result(f"id-{i}", content=f"Defendant SSN: XXX-XX-5678 (case {i})")
-        for i in range(3)
+        _result(f"id-{i}", content=f"Defendant SSN: XXX-XX-5678 (case {i})") for i in range(3)
     ]
     indicators = _FilingPatternAnalyzer._detect_identity_reuse(results)
     assert any(i.indicator_type == "identity_reuse" for i in indicators)
@@ -191,16 +192,14 @@ def test_identity_reuse_unique_ssns_not_triggered():
 
 
 def test_identity_reuse_severity_high_for_ssn():
-    results = [
-        _result(f"id-{i}", content=f"SSN: XXX-XX-4321")
-        for i in range(3)
-    ]
+    results = [_result(f"id-{i}", content="SSN: XXX-XX-4321") for i in range(3)]
     indicators = _FilingPatternAnalyzer._detect_identity_reuse(results)
     ssn_ind = next(i for i in indicators if i.indicator_type == "identity_reuse")
     assert ssn_ind.severity == "high"
 
 
 # ── _detect_suspicious_party_patterns ────────────────────────────────────────
+
 
 def test_suspicious_numeric_entity_detected():
     results = [
@@ -221,6 +220,7 @@ def test_suspicious_entity_not_triggered_for_normal_names():
 
 
 # ── analyze (integration of all detectors) ────────────────────────────────────
+
 
 def test_analyze_empty_returns_no_indicators():
     assert _FilingPatternAnalyzer().analyze([]) == []

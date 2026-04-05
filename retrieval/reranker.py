@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from config.settings import settings
 from config.logging import get_logger
+from config.settings import settings
 from retrieval.hybrid_search import SearchResult
 
 logger = get_logger(__name__)
@@ -67,7 +67,7 @@ class CrossEncoderReranker:
             scores.extend(batch_scores)
 
         ranked = sorted(
-            zip(results, scores),
+            zip(results, scores, strict=False),
             key=lambda x: x[1],
             reverse=True,
         )

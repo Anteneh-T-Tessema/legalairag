@@ -40,6 +40,7 @@ app.include_router(fraud_router, prefix="/api/v1")
 
 # ── Health ────────────────────────────────────────────────────────────────────
 
+
 @app.get("/health", tags=["ops"])
 async def health() -> dict[str, str]:
     return {"status": "ok", "env": settings.app_env}

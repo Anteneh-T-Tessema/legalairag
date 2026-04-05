@@ -3,6 +3,7 @@
 Requires: docker-compose services (postgres) running.
 Run: pytest tests/integration/ -v --timeout=60
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -52,9 +53,7 @@ class TestPgvectorIntegration:
 
         conninfo = db_url.replace("postgresql+psycopg://", "postgresql://")
         with psycopg.connect(conninfo) as conn:
-            row = conn.execute(
-                "SELECT 1 FROM pg_extension WHERE extname = 'vector'"
-            ).fetchone()
+            row = conn.execute("SELECT 1 FROM pg_extension WHERE extname = 'vector'").fetchone()
             assert row is not None, "pgvector extension not installed"
 
     def test_indexer_upsert_and_search(self, db_url: str) -> None:
@@ -84,7 +83,9 @@ class TestPgvectorIntegration:
 
             # Query by cosine similarity
             rows = conn.execute(
-                f"SELECT id, content, embedding <=> %s::vector AS distance FROM {table} ORDER BY distance LIMIT 1",
+                f"SELECT id, content, "
+                f"embedding <=> %s::vector AS distance "
+                f"FROM {table} ORDER BY distance LIMIT 1",
                 (test_vector,),
             ).fetchall()
 
@@ -128,14 +129,35 @@ class TestHybridSearchIntegration:
 
             # Insert test documents
             docs = [
-                ("chunk-1", "src-1", "holdings", "Indiana Code 35-42-1-1 defines murder as a Level 1 felony.", ["IC 35-42-1-1"]),
-                ("chunk-2", "src-2", "facts", "The defendant filed a motion to dismiss in Marion County.", []),
-                ("chunk-3", "src-3", "procedure", "Small claims filing deadline is 2 years under IC 34-11-2-4.", ["IC 34-11-2-4"]),
+                (
+                    "chunk-1",
+                    "src-1",
+                    "holdings",
+                    "Indiana Code 35-42-1-1 defines murder as a Level 1 felony.",
+                    ["IC 35-42-1-1"],
+                ),
+                (
+                    "chunk-2",
+                    "src-2",
+                    "facts",
+                    "The defendant filed a motion to dismiss in Marion County.",
+                    [],
+                ),
+                (
+                    "chunk-3",
+                    "src-3",
+                    "procedure",
+                    "Small claims filing deadline is 2 years under IC 34-11-2-4.",
+                    ["IC 34-11-2-4"],
+                ),
             ]
             for chunk_id, source_id, section, content, citations in docs:
                 vec = [0.1] * dim
                 conn.execute(
-                    f"INSERT INTO {table} (id, source_id, section, content, citations, embedding) VALUES (%s, %s, %s, %s, %s, %s)",
+                    f"INSERT INTO {table} "
+                    f"(id, source_id, section, content, "
+                    f"citations, embedding) "
+                    f"VALUES (%s, %s, %s, %s, %s, %s)",
                     (chunk_id, source_id, section, content, citations, vec),
                 )
             conn.commit()
@@ -143,7 +165,9 @@ class TestHybridSearchIntegration:
             # Vector search
             query_vec = [0.1] * dim
             rows = conn.execute(
-                f"SELECT id, content, embedding <=> %s::vector AS distance FROM {table} ORDER BY distance LIMIT 3",
+                f"SELECT id, content, "
+                f"embedding <=> %s::vector AS distance "
+                f"FROM {table} ORDER BY distance LIMIT 3",
                 (query_vec,),
             ).fetchall()
             assert len(rows) == 3

@@ -8,8 +8,8 @@ from typing import Any
 import boto3
 from botocore.config import Config
 
-from config.settings import settings
 from config.logging import get_logger
+from config.settings import settings
 
 logger = get_logger(__name__)
 
@@ -21,8 +21,8 @@ _SQS_CONFIG = Config(
 
 @dataclass
 class IngestionMessage:
-    source_type: str            # "indiana_courts" | "s3_upload" | "odyssey"
-    source_id: str              # unique identifier (case number, S3 key, etc.)
+    source_type: str  # "indiana_courts" | "s3_upload" | "odyssey"
+    source_id: str  # unique identifier (case number, S3 key, etc.)
     download_url: str
     metadata: dict[str, Any]
 
@@ -37,7 +37,7 @@ class IngestionMessage:
         )
 
     @classmethod
-    def from_body(cls, body: str) -> "IngestionMessage":
+    def from_body(cls, body: str) -> IngestionMessage:
         data = json.loads(body)
         return cls(**data)
 
@@ -87,7 +87,7 @@ class SQSProducer:
             loop = asyncio.get_event_loop()
             response = await loop.run_in_executor(
                 None,
-                lambda: self._client.send_message_batch(
+                lambda entries=entries: self._client.send_message_batch(
                     QueueUrl=self._queue_url, Entries=entries
                 ),
             )
@@ -143,7 +143,9 @@ class SQSConsumer:
                 try:
                     msg = IngestionMessage.from_body(raw["Body"])
                 except (json.JSONDecodeError, KeyError) as exc:
-                    logger.error("sqs_parse_error", receipt=raw.get("ReceiptHandle"), error=str(exc))
+                    logger.error(
+                        "sqs_parse_error", receipt=raw.get("ReceiptHandle"), error=str(exc)
+                    )
                     await self.delete(raw["ReceiptHandle"])
                     continue
                 yield msg, raw["ReceiptHandle"]

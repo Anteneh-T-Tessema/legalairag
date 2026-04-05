@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from ingestion.pipeline.chunker import LegalChunker
 from ingestion.sources.document_loader import ParsedDocument
 
@@ -33,8 +32,14 @@ class TestLegalChunker:
         assert len(ids) == len(set(ids))
 
     def test_section_header_detected(self) -> None:
-        body1 = "The court shall have jurisdiction over all matters arising under this chapter. " * 3
-        body2 = "Any person who violates the provisions of this section shall be guilty of a Class A misdemeanor. " * 3
+        body1 = (
+            "The court shall have jurisdiction over all matters arising under this chapter. " * 3
+        )
+        body2 = (
+            "Any person who violates the provisions of this "
+            "section shall be guilty of a Class A misdemeanor. "
+            * 3
+        )
         text = f"SECTION 1. General Provisions\n{body1}\n\nSECTION 2. Penalties\n{body2}"
         doc = _make_doc(text)
         chunks = self.chunker.chunk(doc)

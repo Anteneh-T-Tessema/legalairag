@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-import json
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 import boto3
 from botocore.config import Config
 
-from config.settings import settings
 from config.logging import get_logger
+from config.settings import settings
 
 logger = get_logger(__name__)
 
@@ -51,8 +51,7 @@ class BedrockLLMClient:
         temperature=0.0 for deterministic, auditable legal outputs.
         """
         converse_messages = [
-            {"role": msg["role"], "content": [{"text": msg["content"]}]}
-            for msg in messages
+            {"role": msg["role"], "content": [{"text": msg["content"]}]} for msg in messages
         ]
 
         kwargs: dict[str, Any] = {
@@ -88,8 +87,7 @@ class BedrockLLMClient:
     ) -> Iterator[str]:
         """Streaming variant — yields text deltas as they arrive."""
         converse_messages = [
-            {"role": msg["role"], "content": [{"text": msg["content"]}]}
-            for msg in messages
+            {"role": msg["role"], "content": [{"text": msg["content"]}]} for msg in messages
         ]
 
         response = self._client.converse_stream(

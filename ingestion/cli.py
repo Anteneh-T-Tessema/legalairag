@@ -5,6 +5,7 @@ Usage:
     python -m ingestion.cli search --query "eviction" --county "Lake County"
     python -m ingestion.cli case --case-number "49D01-2401-CT-000123"
 """
+
 from __future__ import annotations
 
 import argparse
@@ -55,7 +56,9 @@ async def ingest_recent(county: str, days: int, dry_run: bool) -> int:
     return queued
 
 
-async def ingest_search(query: str, county: str | None, case_type: str | None, dry_run: bool) -> int:
+async def ingest_search(
+    query: str, county: str | None, case_type: str | None, dry_run: bool
+) -> int:
     """Search for cases and queue matching documents."""
     queued = 0
     async with IndianaCourtClient() as client:

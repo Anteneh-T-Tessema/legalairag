@@ -1,0 +1,16 @@
+{
+    "venvPath": ".",
+    "venv": ".venv",
+    "pythonVersion": "3.9",
+    "pythonPlatform": "Darwin",
+    "typeCheckingMode": "basic",
+    "extraPaths": [".venv/lib/python3.9/site-packages"],
+    "reportMissingImports": false,
+    "reportMissingModuleSource": false,
+    "reportMissingTypeStubs": false,
+    "reportUnknownMemberType": false,
+    "reportUnknownVariableType": false,
+    "reportUnknownArgumentType": false,
+    "reportUnknownParameterType": false,
+    "reportUnknownLambdaType": false
+}

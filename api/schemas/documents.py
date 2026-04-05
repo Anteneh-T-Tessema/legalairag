@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class IngestRequest(BaseModel):
-    source_type: str   # "indiana_courts" | "s3_upload"
+    source_type: str  # "indiana_courts" | "s3_upload"
     source_id: str
     download_url: str
     metadata: dict = {}

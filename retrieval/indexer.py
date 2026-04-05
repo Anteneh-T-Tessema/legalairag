@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import hashlib
 from datetime import datetime, timezone
 from typing import Any
@@ -8,8 +7,8 @@ from typing import Any
 import psycopg
 from pgvector.psycopg import register_vector
 
-from config.settings import settings
 from config.logging import get_logger
+from config.settings import settings
 from ingestion.pipeline.chunker import Chunk
 
 logger = get_logger(__name__)
@@ -165,6 +164,7 @@ class VectorIndexer:
         be re-embedded and the previous version marked as superseded.
         """
         import json
+
         content_hash = hashlib.sha256(content.encode()).hexdigest()
         version_id = f"{source_id}@{content_hash[:12]}"
         now = datetime.now(tz=timezone.utc)
@@ -182,7 +182,9 @@ class VectorIndexer:
 
             # Mark all previous versions for this source as no longer current
             await cur.execute(
-                "UPDATE document_versions SET is_current = FALSE WHERE source_id = %s AND is_current = TRUE",
+                "UPDATE document_versions "
+                "SET is_current = FALSE "
+                "WHERE source_id = %s AND is_current = TRUE",
                 (source_id,),
             )
 
@@ -191,7 +193,9 @@ class VectorIndexer:
             await cur.execute(
                 """
                 INSERT INTO document_versions
-                    (version_id, source_id, content_hash, ingested_at, effective_date, is_current, metadata)
+                    (version_id, source_id, content_hash,
+                     ingested_at, effective_date,
+                     is_current, metadata)
                 VALUES (%s, %s, %s, %s, %s, TRUE, %s::jsonb)
                 """,
                 (
@@ -246,8 +250,9 @@ class VectorIndexer:
         context: str = "",
     ) -> None:
         """Persist a citation edge to the citation_edges table."""
-        import json
-        edge_id = hashlib.md5(f"{citing_id}->{cited_id}".encode()).hexdigest()
+        edge_id = hashlib.md5(  # noqa: S324
+            f"{citing_id}->{cited_id}".encode()
+        ).hexdigest()
         conn = await self._get_conn()
         async with conn.cursor() as cur:
             await cur.execute(

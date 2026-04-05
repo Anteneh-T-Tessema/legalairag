@@ -11,6 +11,7 @@ What these tests exercise:
 Run:
     pytest tests/e2e/ -v
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -18,11 +19,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from agents.fraud_detection_agent import FraudAnalysisResult, FraudDetectionAgent
 from agents.research_agent import CaseResearchAgent, ResearchResult
-from agents.fraud_detection_agent import FraudDetectionAgent, FraudAnalysisResult
 from retrieval.hybrid_search import SearchResult
 from retrieval.query_parser import parse_legal_query
-
 
 # ── Shared test data ──────────────────────────────────────────────────────────
 
@@ -53,9 +53,11 @@ _SAMPLE_STATUTES = [
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+
 def _make_generation_result(answer: str = "Test answer.") -> Any:
     from generation.generator import GenerationResult  # noqa: PLC0415
     from generation.validator import ValidationResult  # noqa: PLC0415
+
     return GenerationResult(
         answer=answer,
         source_ids=["ic-35-42-1-1"],
@@ -70,6 +72,7 @@ def _make_generation_result(answer: str = "Test answer.") -> Any:
 
 
 # ── parse_legal_query (pure — no mocks needed) ────────────────────────────────
+
 
 def test_citation_query_sets_high_bm25_weight():
     # Pure citation — no semantic words like "what" or "how"
@@ -107,6 +110,7 @@ def test_current_law_enables_temporal_filter():
 
 # ── CaseResearchAgent end-to-end ──────────────────────────────────────────────
 
+
 @pytest.fixture()
 def mock_agent() -> CaseResearchAgent:
     """
@@ -126,7 +130,7 @@ def mock_agent() -> CaseResearchAgent:
     agent._embedder.embed_query = AsyncMock(return_value=[0.1] * 1536)
     agent._searcher.search = AsyncMock(return_value=list(_SAMPLE_STATUTES))
     agent._reranker.rerank = AsyncMock(return_value=list(_SAMPLE_STATUTES))
-    agent._authority.rank = MagicMock(return_value=list(_SAMPLE_STATUTES))
+    agent._authority.rerank = MagicMock(return_value=list(_SAMPLE_STATUTES))
     agent._generator.generate = AsyncMock(
         return_value=_make_generation_result("Under IC § 35-42-1-1, murder is a felony.")
     )
@@ -194,7 +198,7 @@ async def test_research_agent_empty_search_returns_low_confidence(
     mock_agent._searcher.search = AsyncMock(return_value=[])
     mock_agent._reranker.rerank = AsyncMock(return_value=[])
     # Modify return_value rather than replacing the mock (avoids reference aliasing)
-    mock_agent._authority.rank.return_value = []
+    mock_agent._authority.rerank.return_value = []
     mock_agent._generator.generate = AsyncMock(
         return_value=_make_generation_result("No relevant documents found.")
     )
@@ -204,6 +208,7 @@ async def test_research_agent_empty_search_returns_low_confidence(
 
 # ── FraudDetectionAgent end-to-end ────────────────────────────────────────────
 
+
 def _fraud_search_results() -> list[SearchResult]:
     """Synthetic results with burst filing + deed fraud patterns."""
     from datetime import date, timedelta  # noqa: PLC0415
@@ -211,28 +216,32 @@ def _fraud_search_results() -> list[SearchResult]:
     results = []
     for i in range(8):
         d = date(2024, 6, 1) + timedelta(days=i)
-        results.append(SearchResult(
-            chunk_id=f"fraud-{i}",
-            source_id=f"fraud-src-{i}",
-            content="Property transfer case filing.",
-            section="",
-            citations=[],
-            metadata={
-                "parties": ["Shell Co LLC"],
-                "filing_date": d.isoformat(),
-            },
-            score=0.7,
-        ))
+        results.append(
+            SearchResult(
+                chunk_id=f"fraud-{i}",
+                source_id=f"fraud-src-{i}",
+                content="Property transfer case filing.",
+                section="",
+                citations=[],
+                metadata={
+                    "parties": ["Shell Co LLC"],
+                    "filing_date": d.isoformat(),
+                },
+                score=0.7,
+            )
+        )
     for i in range(3):
-        results.append(SearchResult(
-            chunk_id=f"deed-{i}",
-            source_id=f"deed-src-{i}",
-            content="This quitclaim deed transfers property for the sum of $1.00.",
-            section="",
-            citations=[],
-            metadata={},
-            score=0.6,
-        ))
+        results.append(
+            SearchResult(
+                chunk_id=f"deed-{i}",
+                source_id=f"deed-src-{i}",
+                content="This quitclaim deed transfers property for the sum of $1.00.",
+                section="",
+                citations=[],
+                metadata={},
+                score=0.6,
+            )
+        )
     return results
 
 

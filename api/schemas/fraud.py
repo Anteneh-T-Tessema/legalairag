@@ -17,16 +17,16 @@ class FraudAnalysisRequest(BaseModel):
 
 class FraudIndicatorItem(BaseModel):
     indicator_type: str
-    severity: str   # "low" | "medium" | "high" | "critical"
+    severity: str  # "low" | "medium" | "high" | "critical"
     description: str
-    evidence: list[str]   # source_ids supporting this indicator
+    evidence: list[str]  # source_ids supporting this indicator
     confidence: float
 
 
 class FraudAnalysisResponse(BaseModel):
     run_id: str
     query_context: str
-    risk_level: str         # "none" | "low" | "medium" | "high" | "critical"
+    risk_level: str  # "none" | "low" | "medium" | "high" | "critical"
     requires_human_review: bool
     total_filings_analyzed: int
     flagged_source_ids: list[str]

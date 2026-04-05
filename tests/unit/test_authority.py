@@ -1,17 +1,19 @@
 """Unit tests for retrieval.authority module."""
+
 from __future__ import annotations
 
-import pytest
 from datetime import date
 
+import pytest
+
 from retrieval.authority import (
-    get_authority_score,
     AuthorityRanker,
-    CitationGraph,
     CitationEdge,
+    CitationGraph,
     NodeMetadata,
-    is_temporally_valid,
     filter_temporally_valid,
+    get_authority_score,
+    is_temporally_valid,
 )
 from retrieval.hybrid_search import SearchResult
 
@@ -45,6 +47,7 @@ def _node(source_id: str, court: str = "ind") -> NodeMetadata:
 
 
 # ── get_authority_score ────────────────────────────────────────────────────────
+
 
 def test_authority_score_scotus():
     assert get_authority_score("scotus") == 1.00
@@ -80,6 +83,7 @@ def test_authority_score_empty():
 
 # ── AuthorityRanker ────────────────────────────────────────────────────────────
 
+
 def test_ranker_alpha_zero_preserves_order():
     """With alpha=0 authority adds nothing; original score order is kept."""
     ranker = AuthorityRanker(authority_alpha=0.0)
@@ -96,7 +100,7 @@ def test_ranker_alpha_one_orders_by_court_only():
     """With alpha=1 the court authority fully determines ranking."""
     ranker = AuthorityRanker(authority_alpha=1.0)
     results = [
-        _result("ind_case", "s1", 0.99, court="ind"),    # 0.85 authority
+        _result("ind_case", "s1", 0.99, court="ind"),  # 0.85 authority
         _result("scotus_case", "s2", 0.01, court="scotus"),  # 1.00 authority
     ]
     ranked = ranker.rerank(results, alpha=1.0)
@@ -137,6 +141,7 @@ def test_ranker_per_call_alpha_overrides_default():
 
 # ── CitationGraph ──────────────────────────────────────────────────────────────
 
+
 def test_unknown_node_is_good_law():
     graph = CitationGraph()
     assert graph.is_good_law("ghost") is True
@@ -146,12 +151,14 @@ def test_overruled_marks_cited_bad_law():
     graph = CitationGraph()
     graph.add_node(_node("old"))
     graph.add_node(_node("new"))
-    graph.add_edge(CitationEdge(
-        citing_id="new",
-        cited_id="old",
-        treatment="overruled",
-        is_negative=True,
-    ))
+    graph.add_edge(
+        CitationEdge(
+            citing_id="new",
+            cited_id="old",
+            treatment="overruled",
+            is_negative=True,
+        )
+    )
     assert graph.is_good_law("old") is False
 
 
@@ -167,12 +174,14 @@ def test_positive_treatment_leaves_good_law():
     graph = CitationGraph()
     graph.add_node(_node("cited"))
     graph.add_node(_node("citing"))
-    graph.add_edge(CitationEdge(
-        citing_id="citing",
-        cited_id="cited",
-        treatment="followed",
-        is_negative=False,
-    ))
+    graph.add_edge(
+        CitationEdge(
+            citing_id="citing",
+            cited_id="cited",
+            treatment="followed",
+            is_negative=False,
+        )
+    )
     assert graph.is_good_law("cited") is True
 
 
@@ -236,29 +245,39 @@ def test_enrich_results_annotates_times_cited():
 
 # ── is_temporally_valid ────────────────────────────────────────────────────────
 
+
 def test_no_dates_always_valid():
     assert is_temporally_valid({}) is True
 
 
 def test_future_effective_date_is_invalid():
-    assert is_temporally_valid(
-        {"effective_date": "2099-06-01"},
-        reference_date=date(2024, 1, 1),
-    ) is False
+    assert (
+        is_temporally_valid(
+            {"effective_date": "2099-06-01"},
+            reference_date=date(2024, 1, 1),
+        )
+        is False
+    )
 
 
 def test_past_effective_date_is_valid():
-    assert is_temporally_valid(
-        {"effective_date": "2018-01-01"},
-        reference_date=date(2024, 1, 1),
-    ) is True
+    assert (
+        is_temporally_valid(
+            {"effective_date": "2018-01-01"},
+            reference_date=date(2024, 1, 1),
+        )
+        is True
+    )
 
 
 def test_expired_document_is_invalid():
-    assert is_temporally_valid(
-        {"expiry_date": "2019-12-31"},
-        reference_date=date(2024, 1, 1),
-    ) is False
+    assert (
+        is_temporally_valid(
+            {"expiry_date": "2019-12-31"},
+            reference_date=date(2024, 1, 1),
+        )
+        is False
+    )
 
 
 def test_filter_removes_stale_result():

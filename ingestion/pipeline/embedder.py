@@ -6,8 +6,8 @@ from typing import Any
 import boto3
 from botocore.config import Config
 
-from config.settings import settings
 from config.logging import get_logger
+from config.settings import settings
 from ingestion.pipeline.chunker import Chunk
 
 logger = get_logger(__name__)
@@ -46,8 +46,7 @@ class BedrockEmbedder:
         Batches automatically; concurrent batch execution is bounded by the semaphore.
         """
         batches = [
-            chunks[i : i + self._batch_size]
-            for i in range(0, len(chunks), self._batch_size)
+            chunks[i : i + self._batch_size] for i in range(0, len(chunks), self._batch_size)
         ]
         logger.info(
             "embedding_batches",
@@ -75,7 +74,7 @@ class BedrockEmbedder:
         async with self._semaphore:
             tasks = [self._embed_text(chunk.text) for chunk in batch]
             vectors = await asyncio.gather(*tasks)
-            return list(zip(batch, vectors))
+            return list(zip(batch, vectors, strict=False))
 
     async def _embed_text(self, text: str) -> list[float]:
         """Wrap synchronous Bedrock call in executor to avoid blocking the event loop."""

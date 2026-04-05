@@ -1,7 +1,6 @@
 """Unit tests for retrieval.evaluator metric functions."""
-from __future__ import annotations
 
-import math
+from __future__ import annotations
 
 import pytest
 
@@ -15,8 +14,8 @@ from retrieval.evaluator import (
     reciprocal_rank,
 )
 
-
 # ── recall_at_k ───────────────────────────────────────────────────────────────
+
 
 def test_recall_all_retrieved():
     assert recall_at_k(["a", "b"], ["a", "b"], k=2) == 1.0
@@ -46,6 +45,7 @@ def test_recall_k_larger_than_retrieved():
 
 # ── precision_at_k ────────────────────────────────────────────────────────────
 
+
 def test_precision_perfect():
     assert precision_at_k(["a", "b"], ["a", "b"], k=2) == 1.0
 
@@ -68,6 +68,7 @@ def test_precision_counts_only_top_k():
 
 
 # ── reciprocal_rank ───────────────────────────────────────────────────────────
+
 
 def test_rr_first_position():
     assert reciprocal_rank(["a", "b"], {"a"}) == 1.0
@@ -92,6 +93,7 @@ def test_rr_multiple_relevant_uses_first_found():
 
 # ── dcg_at_k ──────────────────────────────────────────────────────────────────
 
+
 def test_dcg_single_perfect():
     # rel=3, at rank 1: (2^3-1)/log2(2) = 7/1 = 7
     assert dcg_at_k(["a"], {"a": 3}, k=1) == pytest.approx(7.0)
@@ -109,6 +111,7 @@ def test_dcg_degrades_with_rank():
 
 
 # ── ndcg_at_k ─────────────────────────────────────────────────────────────────
+
 
 def test_ndcg_ideal_order_is_1():
     graded = {"a": 3, "b": 2, "c": 1}
@@ -139,6 +142,7 @@ def test_ndcg_single_relevant_first_position():
 
 # ── citation_accuracy ─────────────────────────────────────────────────────────
 
+
 def test_citation_accuracy_all_valid():
     assert citation_accuracy(["a", "b"], ["a", "b", "c"]) == 1.0
 
@@ -161,6 +165,7 @@ def test_citation_accuracy_empty_retrieved():
 
 
 # ── faithfulness_score ────────────────────────────────────────────────────────
+
 
 def test_faithfulness_empty_answer():
     assert faithfulness_score("", ["some context"]) == 0.0

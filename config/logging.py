@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import logging
 import sys
+from typing import Any
 
 import structlog
 
@@ -40,5 +43,6 @@ def configure_logging(level: str = "INFO") -> None:
     root_logger.setLevel(level.upper())
 
 
-def get_logger(name: str) -> structlog.stdlib.BoundLogger:
+def get_logger(name: str) -> Any:
+    """Return a structlog BoundLogger for the given module name."""
     return structlog.get_logger(name)
