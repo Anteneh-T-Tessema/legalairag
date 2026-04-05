@@ -168,6 +168,7 @@ class BaseAgent(ABC):
 ## 4. CaseResearchAgent
 
 ### Purpose
+
 Execute a 7-step RAG pipeline optimized for Indiana legal research with citation-grounded answers.
 
 ### Pipeline
@@ -209,10 +210,11 @@ Confidence is estimated via score gap heuristic:
 
 ## 5. FraudDetectionAgent
 
-### Purpose
+### Fraud Detector Purpose
+
 Detect anomalous filing patterns across Indiana court records using 5 specialized pattern detectors.
 
-### Pipeline
+### Fraud Detector Pipeline
 
 ```mermaid
 flowchart TB
@@ -259,6 +261,7 @@ Any with ≥0.9 conf CRITICAL      Immediate review advised
 ```
 
 ### Safety Guarantees
+
 - **Advisory only** — no automated enforcement actions
 - All indicators include `confidence` score and `evidence[]`
 - Results labeled with "FOR INVESTIGATIVE PURPOSES ONLY"
@@ -268,10 +271,11 @@ Any with ≥0.9 conf CRITICAL      Immediate review advised
 
 ## 6. SummarizationAgent
 
-### Purpose
+### Summarization Purpose
+
 Extract structured information from legal documents including summaries, parties, citations, and deadlines.
 
-### Pipeline
+### Summarization Pipeline
 
 ```mermaid
 flowchart LR
@@ -327,6 +331,7 @@ graph TD
 | SummarizationAgent | ❌ | ❌ | ✅ |
 
 ### Rationale
+
 - **FraudDetectionAgent** only uses `search` — it does not generate text, avoiding LLM hallucination risk in fraud contexts
 - **SummarizationAgent** only uses `generate` — it works on already-retrieved documents
 - **CaseResearchAgent** needs all three for the full RAG pipeline
@@ -510,9 +515,9 @@ class MyNewAgent(BaseAgent):
         return run
 ```
 
-2. **Register router** in `api/routers/` to expose the agent via REST
-3. **Add tests** in `tests/unit/test_my_agent.py`
-4. **Update docs** — add to this document and API.md
+1. **Register router** in `api/routers/` to expose the agent via REST
+2. **Add tests** in `tests/unit/test_my_agent.py`
+3. **Update docs** — add to this document and API.md
 
 ### Adding a New Fraud Detector
 
@@ -525,6 +530,6 @@ def _detect_new_pattern(self, filings: list) -> list[FraudIndicator]:
     return indicators
 ```
 
-2. Call it in `run()` alongside existing detectors
-3. Add to the detector table in this document
-4. Add test cases in `tests/unit/test_fraud_detection.py`
+1. Call it in `run()` alongside existing detectors
+2. Add to the detector table in this document
+3. Add test cases in `tests/unit/test_fraud_detection.py`

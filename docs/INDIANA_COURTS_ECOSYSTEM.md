@@ -417,11 +417,12 @@ Beyond the Indiana Courts ecosystem, IndyLeg integrates with these public data s
 
 ## 10. Contact & Governance
 
-**Indiana Office of Court Technology (OCT)**
+### Indiana Office of Court Technology (OCT)
+
 - **Director**: Mary DePrez
 - **Address**: 251 N. Illinois Street, Suite 700, Indianapolis, IN 46204
 - **Phone**: 317-234-2710
-- **Email**: mary.deprez@courts.in.gov
+- **Email**: [mary.deprez@courts.in.gov](mailto:mary.deprez@courts.in.gov)
 
 **Technology Notices**: Subscribe at [courts.in.gov](https://www.in.gov/courts/) for planned/unplanned outage notifications for Odyssey, E-filing, INcite, mycase.in.gov, public.courts.in.gov, and portal.courts.in.gov.
 

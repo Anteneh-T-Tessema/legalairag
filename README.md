@@ -1673,14 +1673,14 @@ pip install aws-cdk-lib constructs
 aws configure   # ensure credentials have CDK/CloudFormation permissions
 ```
 
-#### 1. Bootstrap CDK (first time only, per account/region):
+#### 1. Bootstrap CDK (first time only, per account/region)
 
 ```bash
 cd infrastructure
 cdk bootstrap aws://ACCOUNT_ID/us-east-1
 ```
 
-#### 2. Deploy all stacks:
+#### 2. Deploy all stacks
 
 ```bash
 ./deploy.sh production
@@ -1692,7 +1692,7 @@ The script deploys stacks in dependency order:
 2. `IndylegDataStack` — Aurora, OpenSearch, S3, SQS
 3. `IndylegApiStack` — ECS Fargate (API + worker), ALB, IAM roles
 
-#### 3. Set secrets in AWS Secrets Manager:
+#### 3. Set secrets in AWS Secrets Manager
 
 ```bash
 aws secretsmanager create-secret \
@@ -1700,11 +1700,11 @@ aws secretsmanager create-secret \
   --secret-string "$(python -c 'import secrets; print(secrets.token_hex(32))')"
 ```
 
-#### 4. Run database migrations:
+#### 4. Run database migrations
 
 After first deploy, connect to Aurora and run `infrastructure/docker/init.sql` to create the `legal_chunks` table and pgvector index.
 
-#### 5. Seed initial data:
+#### 5. Seed initial data
 
 ```bash
 # Using the deployed SQS queue URL from outputs-production.json
@@ -1842,7 +1842,7 @@ Run `EXPLAIN ANALYZE` on a vector query. If a sequential scan is used instead of
 
 Contributions are welcome. Please follow these steps:
 
-#### 1. Fork and branch
+### 1. Fork and branch
 
 ```bash
 git checkout -b feature/your-feature-name

@@ -2,13 +2,6 @@ import { useState } from "react";
 import { analyzeFraud } from "../api/client";
 import type { FraudAnalysisResponse, FraudIndicator } from "../api/client";
 
-const SEVERITY_COLORS: Record<string, string> = {
-  critical: "#dc2626",
-  high: "#ea580c",
-  medium: "#d97706",
-  low: "#65a30d",
-};
-
 const RISK_CLASSES: Record<string, string> = {
   none: "risk-none",
   low: "risk-low",
@@ -19,10 +12,7 @@ const RISK_CLASSES: Record<string, string> = {
 
 function SeverityBadge({ severity }: { severity: string }) {
   return (
-    <span
-      className="severity-badge"
-      style={{ backgroundColor: SEVERITY_COLORS[severity] ?? "#6b7280" }}
-    >
+    <span className={`severity-badge severity-badge-${severity}`}>
       {severity.toUpperCase()}
     </span>
   );

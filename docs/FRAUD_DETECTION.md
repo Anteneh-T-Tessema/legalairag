@@ -139,7 +139,7 @@ Results with `risk_level ∈ {medium, high, critical}` automatically set `requir
 
 ## API Endpoint
 
-```
+```http
 POST /api/v1/fraud/analyze
 Authorization: Bearer <token>
 Content-Type: application/json
@@ -200,7 +200,7 @@ def _detect_new_pattern(results: list[SearchResult]) -> list[FraudIndicator]:
     return indicators
 ```
 
-2. Register it in the `analyze()` method:
+1. Register it in the `analyze()` method:
 
 ```python
 def analyze(self, results: list[SearchResult]) -> list[FraudIndicator]:
@@ -210,7 +210,7 @@ def analyze(self, results: list[SearchResult]) -> list[FraudIndicator]:
     return indicators
 ```
 
-3. Add unit tests in `tests/unit/test_fraud_detection.py`.
+1. Add unit tests in `tests/unit/test_fraud_detection.py`.
 
 ---
 

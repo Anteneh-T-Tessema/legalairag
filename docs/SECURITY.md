@@ -110,6 +110,7 @@ sequenceDiagram
 | `iat` | Issued-at timestamp (Unix) |
 
 ### Password Security
+
 - **Algorithm**: bcrypt via `passlib`
 - **Rounds**: Default 12 (configurable)
 - **Storage**: Hashed passwords only — plaintext never stored or logged
@@ -374,6 +375,7 @@ Applied by `SecurityHeadersMiddleware` to every response:
 ```
 
 ### Log Library
+
 - **structlog** — structured logging with JSON output in production
 - Configured in `config/logging.py`
 - Request ID propagation via middleware
@@ -383,6 +385,7 @@ Applied by `SecurityHeadersMiddleware` to every response:
 ## 9. Data Protection
 
 ### Data at Rest
+
 | Store | Encryption | Details |
 |---|---|---|
 | PostgreSQL (Aurora) | AES-256 | AWS-managed encryption at rest |
@@ -391,6 +394,7 @@ Applied by `SecurityHeadersMiddleware` to every response:
 | Redis (ElastiCache) | AES-256 | Encryption at rest + in-transit |
 
 ### Data in Transit
+
 | Communication | Protocol | Details |
 |---|---|---|
 | Client ↔ ALB | HTTPS (TLS 1.2+) | ACM certificate on load balancer |
@@ -401,6 +405,7 @@ Applied by `SecurityHeadersMiddleware` to every response:
 | API ↔ Redis | TLS | `rediss://` scheme for encrypt transport |
 
 ### Sensitive Data Handling
+
 - **Passwords**: bcrypt hashed, never stored in plaintext
 - **JWT Tokens**: Not logged; only token ID (JTI) appears in audit logs
 - **PII in filings**: Stored as-received from court systems; no additional PII collection

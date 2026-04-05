@@ -7,8 +7,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 10
-    reviewers:
-      - "Anteneh-T-Tessema"
     labels:
       - "dependencies"
       - "security"
@@ -29,8 +27,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    reviewers:
-      - "Anteneh-T-Tessema"
     labels:
       - "dependencies"
       - "frontend"
