@@ -455,7 +455,7 @@ Internet
 | A03 | Injection | ✅ Mitigated | Parameterized SQL queries (psycopg); Pydantic input validation |
 | A04 | Insecure Design | ✅ Mitigated | Citation validation prevents hallucination; advisory-only fraud output |
 | A05 | Security Misconfiguration | ✅ Mitigated | Security headers middleware; restrictive CORS; secrets in SSM |
-| A06 | Vulnerable Components | ⚠️ Monitored | Dependency pinning in pyproject.toml; regular updates needed |
+| A06 | Vulnerable Components | ✅ Mitigated | Upper-bounded pins in pyproject.toml; requirements.lock for reproducibility; Dependabot weekly PRs (pip, npm, GH Actions); CI pip-audit + npm audit on every push |
 | A07 | Auth Failures | ✅ Mitigated | Token rotation; revocation; rate limiting on auth endpoints |
 | A08 | Data Integrity Failures | ✅ Mitigated | Content-hash deduplication; citation validation; signed JWTs |
 | A09 | Logging Failures | ✅ Mitigated | structlog audit trail; request/response logging; agent step logging |
