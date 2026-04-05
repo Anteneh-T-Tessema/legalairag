@@ -134,3 +134,81 @@ class TestBedrockLLMClient:
             {"role": "user", "content": [{"text": "Hello"}]},
             {"role": "assistant", "content": [{"text": "Hi"}]},
         ]
+
+    def test_complete_dev_fallback_on_exception(self):
+        """In dev mode, Bedrock errors fall back to _dev_fallback."""
+
+        client, mock_bedrock = self._make_client()
+        mock_bedrock.converse.side_effect = Exception("No credentials")
+        with patch("generation.bedrock_client.settings") as mock_settings:
+            mock_settings.app_env = "development"
+            result = client.complete(
+                system="sys",
+                messages=[{"role": "user", "content": "q"}],
+            )
+        assert "[DEV MODE" in result
+
+    def test_complete_reraises_in_production(self):
+        """In production, Bedrock errors propagate."""
+        import pytest
+
+        client, mock_bedrock = self._make_client()
+        mock_bedrock.converse.side_effect = Exception("No credentials")
+        with patch("generation.bedrock_client.settings") as mock_settings:
+            mock_settings.app_env = "production"
+            with pytest.raises(Exception, match="No credentials"):
+                client.complete(
+                    system="sys",
+                    messages=[{"role": "user", "content": "q"}],
+                )
+
+    def test_dev_fallback_with_context_blocks(self):
+        """_dev_fallback extracts and formats context blocks from prompt."""
+        from generation.bedrock_client import BedrockLLMClient
+
+        prompt = (
+            "[1] SOURCE: case-001 | SECTION: Section 1\n"
+            "Citations: I.C. 35-1\n"
+            "The defendant was found guilty.\n"
+            "---\n"
+        )
+        result = BedrockLLMClient._dev_fallback(
+            [{"role": "user", "content": prompt}]
+        )
+        assert "[DEV MODE" in result
+        assert "Section 1" in result or "case-001" in result
+
+    def test_dev_fallback_without_blocks(self):
+        """_dev_fallback with an unrecognised prompt returns a simple dev message."""
+        from generation.bedrock_client import BedrockLLMClient
+
+        result = BedrockLLMClient._dev_fallback(
+            [{"role": "user", "content": "just a plain question"}]
+        )
+        assert "[DEV MODE]" in result
+
+    def test_dev_fallback_empty_messages(self):
+        """_dev_fallback handles empty messages list without error."""
+        from generation.bedrock_client import BedrockLLMClient
+
+        result = BedrockLLMClient._dev_fallback([])
+        assert "[DEV MODE]" in result
+
+    def test_stream_skips_delta_without_text_key(self):
+        """stream() skips contentBlockDelta events where delta has no 'text' key."""
+        stream_resp = {
+            "stream": [
+                {"contentBlockDelta": {"delta": {"toolUse": "..."}}},
+                {"contentBlockDelta": {"delta": {"text": "hello"}}},
+            ]
+        }
+        client, mock_bedrock = self._make_client(stream_response=stream_resp)
+        mock_bedrock.converse_stream.return_value = stream_resp
+
+        chunks = list(
+            client.stream(
+                system="sys",
+                messages=[{"role": "user", "content": "q"}],
+            )
+        )
+        assert chunks == ["hello"]

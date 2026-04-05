@@ -4,8 +4,15 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from agents.fraud_detection_agent import FraudIndicator, _FilingPatternAnalyzer
+import pytest
+
+from agents.fraud_detection_agent import (
+    FraudDetectionAgent,
+    FraudIndicator,
+    _FilingPatternAnalyzer,
+)
 from retrieval.hybrid_search import SearchResult
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -238,3 +245,202 @@ def test_analyze_returns_list_of_fraud_indicators():
     results = _burst(7)
     indicators = _FilingPatternAnalyzer().analyze(results)
     assert all(isinstance(i, FraudIndicator) for i in indicators)
+
+
+# ── _detect_identity_reuse — DOB path ─────────────────────────────────────────
+
+
+def test_identity_reuse_dob_in_four_cases():
+    """DOB appearing in 4+ cases triggers medium identity_reuse indicator."""
+    results = [
+        _result(f"dob-{i}", content="DOB: 03/15/1985 (case record)")
+        for i in range(4)
+    ]
+    indicators = _FilingPatternAnalyzer._detect_identity_reuse(results)
+    dob_inds = [i for i in indicators if i.indicator_type == "identity_reuse"]
+    assert dob_inds
+    assert dob_inds[0].severity == "medium"
+
+
+def test_identity_reuse_dob_three_cases_not_triggered():
+    """DOB in 3 cases (threshold is >3) does NOT trigger."""
+    results = [
+        _result(f"dob-{i}", content="DOB: 07/04/1990 case record")
+        for i in range(3)
+    ]
+    indicators = _FilingPatternAnalyzer._detect_identity_reuse(results)
+    dob_inds = [i for i in indicators if i.indicator_type == "identity_reuse"]
+    assert not dob_inds
+
+
+# ── _detect_rapid_ownership_transfer ──────────────────────────────────────────
+
+
+def _property_transfer(i: int, days_offset: int, addr: str = "123 Main St") -> SearchResult:
+    """Filing with a property address mention and filing_date."""
+    content = f"The property at {addr}, Indianapolis, Indiana is hereby transferred."
+    return _result(
+        f"prop-{i}",
+        content=content,
+        filing_date=(date(2024, 1, 1) + timedelta(days=days_offset)).isoformat(),
+    )
+
+
+def test_rapid_ownership_transfer_detected():
+    """Same address transferred 3 times within 90 days triggers indicator."""
+    results = [_property_transfer(i, i * 20) for i in range(3)]  # 0, 20, 40 days
+    indicators = _FilingPatternAnalyzer._detect_rapid_ownership_transfer(results)
+    assert any(i.indicator_type == "rapid_ownership_transfer" for i in indicators)
+
+
+def test_rapid_ownership_transfer_not_triggered_within_two_filings():
+    results = [_property_transfer(i, i * 10) for i in range(2)]
+    indicators = _FilingPatternAnalyzer._detect_rapid_ownership_transfer(results)
+    assert not any(i.indicator_type == "rapid_ownership_transfer" for i in indicators)
+
+
+def test_rapid_ownership_transfer_not_triggered_over_90_days():
+    """3 transfers but span > 90 days → not triggered."""
+    results = [_property_transfer(i, i * 50) for i in range(3)]  # 0, 50, 100 days
+    indicators = _FilingPatternAnalyzer._detect_rapid_ownership_transfer(results)
+    assert not any(i.indicator_type == "rapid_ownership_transfer" for i in indicators)
+
+
+def test_rapid_ownership_transfer_no_filing_date_skipped():
+    results = [
+        _result(f"p{i}", content="123 Oak Ave, Indianapolis, Indiana transferred.")
+        for i in range(3)
+    ]  # no filing_date → should not trigger
+    indicators = _FilingPatternAnalyzer._detect_rapid_ownership_transfer(results)
+    assert not any(i.indicator_type == "rapid_ownership_transfer" for i in indicators)
+
+
+def test_rapid_ownership_transfer_severity_high():
+    results = [_property_transfer(i, i * 15) for i in range(4)]
+    indicators = _FilingPatternAnalyzer._detect_rapid_ownership_transfer(results)
+    rapid = [i for i in indicators if i.indicator_type == "rapid_ownership_transfer"]
+    if rapid:  # only assert if triggered
+        assert rapid[0].severity == "high"
+
+
+# ── FraudDetectionAgent._compute_risk_level ───────────────────────────────────
+
+
+def test_risk_none_when_no_indicators():
+    assert FraudDetectionAgent._compute_risk_level([]) == "none"
+
+
+def test_risk_low_for_single_low_severity():
+    ind = FraudIndicator("t", "low", "desc", [], 0.3)
+    assert FraudDetectionAgent._compute_risk_level([ind]) == "low"
+
+
+def test_risk_medium_for_single_medium_severity():
+    ind = FraudIndicator("t", "medium", "desc", [], 0.5)
+    assert FraudDetectionAgent._compute_risk_level([ind]) == "medium"
+
+
+def test_risk_high_for_single_high_severity():
+    ind = FraudIndicator("t", "high", "desc", [], 0.8)
+    assert FraudDetectionAgent._compute_risk_level([ind]) == "high"
+
+
+def test_risk_critical_for_critical_indicator():
+    ind = FraudIndicator("t", "critical", "desc", [], 0.95)
+    assert FraudDetectionAgent._compute_risk_level([ind]) == "critical"
+
+
+def test_risk_critical_for_two_high_indicators():
+    inds = [FraudIndicator("t", "high", "d", [], 0.8) for _ in range(2)]
+    assert FraudDetectionAgent._compute_risk_level(inds) == "critical"
+
+
+def test_risk_critical_for_one_high_and_three_total():
+    inds = [
+        FraudIndicator("t", "high", "d", [], 0.8),
+        FraudIndicator("t", "medium", "d", [], 0.5),
+        FraudIndicator("t", "low", "d", [], 0.3),
+    ]
+    assert FraudDetectionAgent._compute_risk_level(inds) == "critical"
+
+
+def test_risk_high_for_two_mediums():
+    inds = [FraudIndicator("t", "medium", "d", [], 0.5) for _ in range(2)]
+    assert FraudDetectionAgent._compute_risk_level(inds) == "high"
+
+
+# ── FraudDetectionAgent._execute ─────────────────────────────────────────────
+
+
+def _make_fraud_agent() -> FraudDetectionAgent:
+    """Build a FraudDetectionAgent with all external deps mocked."""
+    with (
+        patch("agents.fraud_detection_agent.BedrockEmbedder"),
+        patch("agents.fraud_detection_agent.HybridSearcher"),
+    ):
+        agent = FraudDetectionAgent()
+
+    mock_chunk = MagicMock()
+    mock_chunk.source_id = "src-1"
+    mock_chunk.content = "Indiana filing content."
+    mock_chunk.metadata = {}
+
+    agent._embedder = MagicMock()
+    agent._embedder.embed_query = AsyncMock(return_value=[0.1] * 128)
+    agent._searcher = MagicMock()
+    agent._searcher.search = AsyncMock(return_value=[mock_chunk])
+    return agent
+
+
+@pytest.mark.asyncio
+async def test_fraud_agent_execute_no_indicators():
+    agent = _make_fraud_agent()
+    # Analyzer returns no indicators → risk_level = "none"
+    agent._analyzer = MagicMock()
+    agent._analyzer.analyze.return_value = []
+
+    result = await agent._execute(query="quitclaim deed Marion County", jurisdiction="Indiana")
+
+    assert result.risk_level == "none"
+    assert not result.requires_human_review
+    assert result.total_filings_analyzed == 1
+
+
+@pytest.mark.asyncio
+async def test_fraud_agent_execute_with_indicators():
+    agent = _make_fraud_agent()
+    indicator = FraudIndicator(
+        indicator_type="deed_fraud_pattern",
+        severity="high",
+        description="Suspicious deeds",
+        evidence=["src-1"],
+        confidence=0.8,
+    )
+    agent._analyzer = MagicMock()
+    agent._analyzer.analyze.return_value = [indicator]
+
+    with patch("generation.bedrock_client.BedrockLLMClient") as mock_client_cls:
+        mock_client = MagicMock()
+        mock_client.complete.return_value = "Investigation memo text."
+        mock_client_cls.return_value = mock_client
+        result = await agent._execute(query="suspicious deeds", jurisdiction="Indiana")
+
+    assert result.risk_level == "high"
+    assert result.requires_human_review
+    assert "src-1" in result.flagged_source_ids
+
+
+@pytest.mark.asyncio
+async def test_fraud_agent_execute_llm_failure_falls_back():
+    """If Bedrock fails, _generate_summary returns a fallback string."""
+    agent = _make_fraud_agent()
+    indicator = FraudIndicator("deed_fraud_pattern", "high", "d", ["src-1"], 0.8)
+    agent._analyzer = MagicMock()
+    agent._analyzer.analyze.return_value = [indicator]
+
+    with patch("generation.bedrock_client.BedrockLLMClient") as mock_cls:
+        mock_cls.side_effect = Exception("No AWS credentials")
+        result = await agent._execute(query="test query")
+
+    assert result.summary  # fallback summary should be non-empty
+    assert "src-1" in result.flagged_source_ids

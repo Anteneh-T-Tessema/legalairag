@@ -2,9 +2,19 @@
 
 from __future__ import annotations
 
+import json
+import tempfile
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
 from retrieval.evaluator import (
+    EvalDataset,
+    EvalExample,
+    EvaluationReport,
+    ExampleResult,
+    RAGEvaluator,
     citation_accuracy,
     dcg_at_k,
     faithfulness_score,
@@ -195,3 +205,190 @@ def test_faithfulness_no_claims_neutral():
     context = ["something completely different"]
     score = faithfulness_score(answer, context)
     assert score == pytest.approx(0.5)
+
+
+# ── EvalDataset ───────────────────────────────────────────────────────────────
+
+
+def _make_dataset_json(path: Path) -> None:
+    data = {
+        "name": "test-dataset",
+        "created_by": "tester",
+        "description": "Unit test dataset",
+        "examples": [
+            {
+                "query_id": "q1",
+                "query": "What is battery in Indiana?",
+                "relevant_source_ids": ["src-1", "src-2"],
+                "graded_relevance": {"src-1": 3, "src-2": 1},
+                "expected_citations": ["I.C. 35-42-2-1"],
+                "jurisdiction": "Indiana",
+                "notes": "test note",
+            }
+        ],
+    }
+    path.write_text(json.dumps(data))
+
+
+def test_eval_dataset_from_json():
+    with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as f:
+        tmp = Path(f.name)
+    _make_dataset_json(tmp)
+
+    dataset = EvalDataset.from_json(tmp)
+    assert dataset.name == "test-dataset"
+    assert len(dataset.examples) == 1
+    ex = dataset.examples[0]
+    assert ex.query_id == "q1"
+    assert ex.graded_relevance == {"src-1": 3, "src-2": 1}
+    assert ex.jurisdiction == "Indiana"
+    tmp.unlink()
+
+
+def test_eval_dataset_to_json_round_trip():
+    example = EvalExample(
+        query_id="q2",
+        query="What does Ind. Code § 35-42-1-1 say?",
+        relevant_source_ids=["src-3"],
+        graded_relevance={"src-3": 2},
+        expected_citations=["I.C. 35-42-1-1"],
+        jurisdiction="Indiana",
+        notes="",
+    )
+    dataset = EvalDataset(examples=[example], name="round-trip", created_by="dev")
+
+    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as f:
+        tmp = Path(f.name)
+
+    dataset.to_json(tmp)
+    reloaded = EvalDataset.from_json(tmp)
+
+    assert reloaded.name == "round-trip"
+    assert reloaded.examples[0].query_id == "q2"
+    tmp.unlink()
+
+
+# ── EvaluationReport ──────────────────────────────────────────────────────────
+
+
+def _make_report(num_examples: int = 2) -> EvaluationReport:
+    results = [
+        ExampleResult(
+            query_id=f"q{i}",
+            query=f"query {i}",
+            retrieved_ids=["src-1", "src-2"],
+            generated_answer="The court held this.",
+            cited_ids=["src-1"],
+            recall_at_k={5: 0.8},
+            precision_at_k={5: 0.4},
+            reciprocal_rank=1.0,
+            ndcg_at_k={5: 0.9},
+            citation_accuracy=1.0,
+            faithfulness_score=0.7,
+            relevant_ids=["src-1"],
+            missing_relevant=[],
+            hallucinated_citations=[],
+        )
+        for i in range(num_examples)
+    ]
+    return EvaluationReport(
+        dataset_name="test",
+        num_examples=num_examples,
+        k_values=[5],
+        mean_recall_at_k={5: 0.8},
+        mean_precision_at_k={5: 0.4},
+        mrr=1.0,
+        mean_ndcg_at_k={5: 0.9},
+        mean_citation_accuracy=1.0,
+        mean_faithfulness=0.7,
+        per_example=results,
+    )
+
+
+def test_evaluation_report_print_summary(capsys):
+    report = _make_report()
+    report.print_summary()
+    captured = capsys.readouterr()
+    assert "EVALUATION REPORT" in captured.out
+    assert "MRR" in captured.out
+    assert "Citation Accuracy" in captured.out
+
+
+def test_evaluation_report_to_dict():
+    report = _make_report()
+    d = report.to_dict()
+    assert d["dataset"] == "test"
+    assert "mrr" in d
+    assert "recall_at_k" in d
+    assert "citation_accuracy" in d
+
+
+# ── RAGEvaluator ──────────────────────────────────────────────────────────────
+
+
+def _make_evaluator() -> RAGEvaluator:
+    mock_chunk = MagicMock()
+    mock_chunk.source_id = "src-1"
+    mock_chunk.content = "The Indiana Supreme Court held that battery requires touch."
+
+    gen_result = MagicMock()
+    gen_result.answer = "The court held that battery was proven."
+    gen_result.validation.cited_source_ids = ["src-1"]
+
+    embedder = MagicMock()
+    embedder.embed_query = AsyncMock(return_value=[0.1] * 128)
+    searcher = MagicMock()
+    searcher.search = AsyncMock(return_value=[mock_chunk])
+    reranker = MagicMock()
+    reranker.rerank = AsyncMock(return_value=[mock_chunk])
+    generator = MagicMock()
+    generator.generate = AsyncMock(return_value=gen_result)
+
+    return RAGEvaluator(embedder, searcher, reranker, generator, k_values=[1, 5])
+
+
+@pytest.mark.asyncio
+async def test_rag_evaluator_evaluate_returns_report():
+    evaluator = _make_evaluator()
+    example = EvalExample(
+        query_id="q1",
+        query="What is battery under Indiana law?",
+        relevant_source_ids=["src-1"],
+        jurisdiction="Indiana",
+    )
+    dataset = EvalDataset(examples=[example], name="test-eval")
+
+    report = await evaluator.evaluate(dataset)
+
+    assert report.num_examples == 1
+    assert report.mrr == pytest.approx(1.0)
+    assert 1 in report.mean_recall_at_k or 5 in report.mean_recall_at_k
+
+
+@pytest.mark.asyncio
+async def test_rag_evaluator_evaluate_skip_generation():
+    evaluator = _make_evaluator()
+    example = EvalExample(
+        query_id="q2",
+        query="battery Indiana",
+        relevant_source_ids=["src-1"],
+    )
+    dataset = EvalDataset(examples=[example], name="retrieval-only")
+
+    report = await evaluator.evaluate(dataset, generate_answers=False)
+
+    assert report.num_examples == 1
+    # generator should NOT have been called
+    evaluator._generator.generate.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_rag_evaluator_aggregate_empty_returns_zero_report():
+    evaluator = _make_evaluator()
+    dataset = EvalDataset(examples=[], name="empty")
+
+    report = await evaluator.evaluate(dataset)
+
+    assert report.num_examples == 0
+    assert report.mrr == 0.0
+    assert report.mean_citation_accuracy == 0.0

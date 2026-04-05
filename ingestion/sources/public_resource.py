@@ -200,7 +200,7 @@ class CourtListenerClient:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         all_opinions: list[PublicLegalOpinion] = []
-        for court_id, result in zip(courts, results, strict=True):
+        for court_id, result in zip(courts, results):  # noqa: B905
             if isinstance(result, BaseException):
                 logger.error("courtlistener_court_error", court=court_id, error=str(result))
             else:
