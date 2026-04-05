@@ -1421,28 +1421,28 @@ indyleg/
 
 ### Step-by-Step Setup
 
-**1. Clone the repository**
+#### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Anteneh-T-Tessema/legalairag.git
 cd legalairag
 ```
 
-**2. Create and activate the Python virtual environment**
+#### 2. Create and activate the Python virtual environment
 
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 ```
 
-**3. Install Python dependencies**
+#### 3. Install Python dependencies
 
 ```bash
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
-**4. Configure environment variables**
+#### 4. Configure environment variables
 
 ```bash
 cp .env.example .env
@@ -1451,7 +1451,7 @@ cp .env.example .env
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-**5. Start local services with Docker Compose**
+#### 5. Start local services with Docker Compose
 
 ```bash
 docker compose up -d
@@ -1469,7 +1469,7 @@ Wait for services to be healthy:
 docker compose ps   # all should show "healthy"
 ```
 
-**6. Run the FastAPI backend**
+#### 6. Run the FastAPI backend
 
 ```bash
 uvicorn api.main:app --reload --port 8000
@@ -1477,7 +1477,7 @@ uvicorn api.main:app --reload --port 8000
 
 Visit `http://localhost:8000/docs` for the interactive API documentation (Swagger UI, available in development mode only).
 
-**7. Start the React frontend**
+#### 7. Start the React frontend
 
 ```bash
 cd ui
@@ -1487,7 +1487,7 @@ npm run dev
 
 The UI is available at `http://localhost:3000`. API calls to `/api/...` are proxied to the FastAPI backend at `localhost:8000`.
 
-**8. Seed test data (optional)**
+#### 8. Seed test data (optional)
 
 ```bash
 # Ingest recent Marion County filings (dry-run — no queue write)
@@ -1497,7 +1497,7 @@ python -m ingestion.cli recent --county "Marion County" --days 7 --dry-run
 python -m ingestion.cli recent --county "Marion County" --days 7
 ```
 
-**9. Log in with seed credentials**
+#### 9. Log in with seed credentials
 
 | Username | Password | Role |
 |---|---|---|
@@ -1673,14 +1673,14 @@ pip install aws-cdk-lib constructs
 aws configure   # ensure credentials have CDK/CloudFormation permissions
 ```
 
-**1. Bootstrap CDK** (first time only, per account/region):
+#### 1. Bootstrap CDK (first time only, per account/region):
 
 ```bash
 cd infrastructure
 cdk bootstrap aws://ACCOUNT_ID/us-east-1
 ```
 
-**2. Deploy all stacks:**
+#### 2. Deploy all stacks:
 
 ```bash
 ./deploy.sh production
@@ -1692,7 +1692,7 @@ The script deploys stacks in dependency order:
 2. `IndylegDataStack` — Aurora, OpenSearch, S3, SQS
 3. `IndylegApiStack` — ECS Fargate (API + worker), ALB, IAM roles
 
-**3. Set secrets in AWS Secrets Manager:**
+#### 3. Set secrets in AWS Secrets Manager:
 
 ```bash
 aws secretsmanager create-secret \
@@ -1700,11 +1700,11 @@ aws secretsmanager create-secret \
   --secret-string "$(python -c 'import secrets; print(secrets.token_hex(32))')"
 ```
 
-**4. Run database migrations:**
+#### 4. Run database migrations:
 
 After first deploy, connect to Aurora and run `infrastructure/docker/init.sql` to create the `legal_chunks` table and pgvector index.
 
-**5. Seed initial data:**
+#### 5. Seed initial data:
 
 ```bash
 # Using the deployed SQS queue URL from outputs-production.json
@@ -1842,13 +1842,13 @@ Run `EXPLAIN ANALYZE` on a vector query. If a sequential scan is used instead of
 
 Contributions are welcome. Please follow these steps:
 
-**1. Fork and branch**
+#### 1. Fork and branch
 
 ```bash
 git checkout -b feature/your-feature-name
 ```
 
-**2. Install pre-commit hooks**
+#### 2. Install pre-commit hooks
 
 ```bash
 pip install pre-commit
@@ -1857,12 +1857,12 @@ pre-commit install
 
 The hooks run `ruff`, `mypy`, and `tsc --noEmit` before each commit.
 
-**3. Write tests**
+#### 3. Write tests
 
 - Unit tests go in `tests/unit/` — mock all external services
 - Integration tests go in `tests/integration/` — require Docker Compose or real AWS
 
-**4. Ensure CI passes locally**
+#### 4. Ensure CI passes locally
 
 ```bash
 pytest tests/unit/ -v           # all unit tests
@@ -1870,7 +1870,7 @@ cd ui && npx tsc --noEmit       # TypeScript
 ruff check . && mypy .          # linting + types
 ```
 
-**5. Open a pull request**
+#### 5. Open a pull request
 
 Describe:
 - What the change does

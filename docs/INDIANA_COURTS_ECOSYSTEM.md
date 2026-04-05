@@ -24,7 +24,7 @@
 
 The Indiana Judicial Branch operates a comprehensive technology ecosystem managed by the **Indiana Office of Court Technology (OCT)**. IndyLeg integrates with the publicly accessible portions of this ecosystem to power its Legal RAG pipeline.
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                     INDIANA COURTS TECHNOLOGY ECOSYSTEM                     │
 │                                                                             │
@@ -330,7 +330,7 @@ Beyond the Indiana Courts ecosystem, IndyLeg integrates with these public data s
 
 ## 7. IndyLeg Integration Map
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        IndyLeg DATA SOURCE STATUS                          │
 ├─────────────────────────────────────────────────────────────────────────────┤
@@ -374,7 +374,7 @@ Beyond the Indiana Courts ecosystem, IndyLeg integrates with these public data s
 
 ## 8. Data Flow: Source → IndyLeg Pipeline
 
-```
+```text
                 Public Portals                Internal Systems (future)
               ┌──────────────┐              ┌──────────────────────┐
               │ mycase.in.gov│              │  Odyssey (internal)  │
