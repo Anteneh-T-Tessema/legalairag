@@ -41,7 +41,9 @@ def _get_redis():
         import redis as _redis_lib  # type: ignore[import-untyped]
 
         _redis = _redis_lib.Redis.from_url(
-            redis_url, decode_responses=True, socket_connect_timeout=2,
+            redis_url,
+            decode_responses=True,
+            socket_connect_timeout=2,
         )
         _redis.ping()
         logger.info("rate-limiter connected to Redis at %s", redis_url)

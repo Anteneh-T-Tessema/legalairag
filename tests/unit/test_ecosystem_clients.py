@@ -32,13 +32,9 @@ from ingestion.sources.ecosystem_clients import (
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
-def _mock_response(
-    json_data: dict, status_code: int = 200
-) -> httpx.Response:
+def _mock_response(json_data: dict, status_code: int = 200) -> httpx.Response:
     req = httpx.Request("GET", "http://test")
-    return httpx.Response(
-        status_code=status_code, json=json_data, request=req
-    )
+    return httpx.Response(status_code=status_code, json=json_data, request=req)
 
 
 def _run(coro):  # noqa: ANN001, ANN201
@@ -122,12 +118,8 @@ class TestProtectionOrderRegistryClient:
 
     def test_search_by_respondent(self) -> None:
         c = _make_client(ProtectionOrderRegistryClient)
-        c._client.get = AsyncMock(
-            return_value=_mock_response({"orders": [SAMPLE_PO]})
-        )
-        results = _run(
-            c.search_by_respondent("Smith", county="Marion")
-        )
+        c._client.get = AsyncMock(return_value=_mock_response({"orders": [SAMPLE_PO]}))
+        results = _run(c.search_by_respondent("Smith", county="Marion"))
         assert len(results) == 1
         assert results[0].respondent == "John Smith"
 
@@ -136,9 +128,7 @@ class TestProtectionOrderRegistryClient:
         req = httpx.Request("GET", "http://test")
         resp_404 = httpx.Response(404, json={}, request=req)
         c._client.get = AsyncMock(
-            side_effect=httpx.HTTPStatusError(
-                "Not found", request=req, response=resp_404
-            )
+            side_effect=httpx.HTTPStatusError("Not found", request=req, response=resp_404)
         )
         result = _run(c.get_order("NONEXISTENT"))
         assert result is None
@@ -173,9 +163,7 @@ class TestCourtStatisticsClient:
 
     def test_get_county_report(self) -> None:
         c = _make_client(CourtStatisticsClient)
-        c._client.get = AsyncMock(
-            return_value=_mock_response(SAMPLE_CASELOAD)
-        )
+        c._client.get = AsyncMock(return_value=_mock_response(SAMPLE_CASELOAD))
         result = _run(c.get_county_report("Marion", 2024))
         assert result is not None
         assert result.county == "Marion"
@@ -185,9 +173,7 @@ class TestCourtStatisticsClient:
         req = httpx.Request("GET", "http://test")
         resp_404 = httpx.Response(404, json={}, request=req)
         c._client.get = AsyncMock(
-            side_effect=httpx.HTTPStatusError(
-                "Not found", request=req, response=resp_404
-            )
+            side_effect=httpx.HTTPStatusError("Not found", request=req, response=resp_404)
         )
         result = _run(c.get_county_report("Nonexistent", 2024))
         assert result is None
@@ -195,9 +181,7 @@ class TestCourtStatisticsClient:
     def test_statewide_summary(self) -> None:
         c = _make_client(CourtStatisticsClient)
         c._client.get = AsyncMock(
-            return_value=_mock_response(
-                {"counties": [SAMPLE_CASELOAD, SAMPLE_CASELOAD]}
-            )
+            return_value=_mock_response({"counties": [SAMPLE_CASELOAD, SAMPLE_CASELOAD]})
         )
         results = _run(c.statewide_summary(2024))
         assert len(results) == 2
@@ -228,11 +212,7 @@ class TestEFilingFeedClient:
 
     def test_recent_accepted(self) -> None:
         c = _make_client(EFilingFeedClient)
-        c._client.get = AsyncMock(
-            return_value=_mock_response(
-                {"filings": [SAMPLE_EFILING]}
-            )
-        )
+        c._client.get = AsyncMock(return_value=_mock_response({"filings": [SAMPLE_EFILING]}))
         results = _run(c.recent_accepted(county="Marion", days_back=7))
         assert len(results) == 1
         assert results[0].case_number == "49D01-2401-CT-000789"
@@ -242,9 +222,7 @@ class TestEFilingFeedClient:
         req = httpx.Request("GET", "http://test")
         resp_404 = httpx.Response(404, json={}, request=req)
         c._client.get = AsyncMock(
-            side_effect=httpx.HTTPStatusError(
-                "Not found", request=req, response=resp_404
-            )
+            side_effect=httpx.HTTPStatusError("Not found", request=req, response=resp_404)
         )
         assert _run(c.get_filing("NONEXISTENT")) is None
 
@@ -280,9 +258,7 @@ class TestBMVClient:
 
     def test_lookup_by_case(self) -> None:
         c = _make_client(BMVClient)
-        c._client.get = AsyncMock(
-            return_value=_mock_response(SAMPLE_BMV)
-        )
+        c._client.get = AsyncMock(return_value=_mock_response(SAMPLE_BMV))
         result = _run(c.lookup_by_case("49D01-2401-IF-000001"))
         assert result is not None
         assert result.driver_name == "John Doe"
@@ -292,17 +268,13 @@ class TestBMVClient:
         req = httpx.Request("GET", "http://test")
         resp_404 = httpx.Response(404, json={}, request=req)
         c._client.get = AsyncMock(
-            side_effect=httpx.HTTPStatusError(
-                "Not found", request=req, response=resp_404
-            )
+            side_effect=httpx.HTTPStatusError("Not found", request=req, response=resp_404)
         )
         assert _run(c.lookup_by_case("NONEXISTENT")) is None
 
     def test_lookup_by_license(self) -> None:
         c = _make_client(BMVClient)
-        c._client.get = AsyncMock(
-            return_value=_mock_response(SAMPLE_BMV)
-        )
+        c._client.get = AsyncMock(return_value=_mock_response(SAMPLE_BMV))
         result = _run(c.lookup_by_license("1234-5678-9012"))
         assert result is not None
         assert result.license_number == "1234-5678-9012"
@@ -338,13 +310,9 @@ class TestECRWClient:
     def test_search_records(self) -> None:
         c = _make_client(ECRWClient)
         c._client.get = AsyncMock(
-            return_value=_mock_response(
-                {"records": [SAMPLE_ECRW, SAMPLE_ECRW]}
-            )
+            return_value=_mock_response({"records": [SAMPLE_ECRW, SAMPLE_ECRW]})
         )
-        results = _run(
-            c.search_records(county="Marion", document_type="Judgment")
-        )
+        results = _run(c.search_records(county="Marion", document_type="Judgment"))
         assert len(results) == 2
 
     def test_get_record_404(self) -> None:
@@ -352,17 +320,13 @@ class TestECRWClient:
         req = httpx.Request("GET", "http://test")
         resp_404 = httpx.Response(404, json={}, request=req)
         c._client.get = AsyncMock(
-            side_effect=httpx.HTTPStatusError(
-                "Not found", request=req, response=resp_404
-            )
+            side_effect=httpx.HTTPStatusError("Not found", request=req, response=resp_404)
         )
         assert _run(c.get_record("NONEXISTENT")) is None
 
     def test_bulk_export(self) -> None:
         c = _make_client(ECRWClient)
-        c._client.get = AsyncMock(
-            return_value=_mock_response({"records": [SAMPLE_ECRW]})
-        )
+        c._client.get = AsyncMock(return_value=_mock_response({"records": [SAMPLE_ECRW]}))
         results = _run(c.bulk_export("Marion"))
         assert len(results) == 1
 
@@ -389,9 +353,7 @@ class TestBaseRetry:
             "ingestion.sources.ecosystem_clients.asyncio.sleep",
             new_callable=AsyncMock,
         ):
-            results = _run(
-                c.search_by_respondent("Test")
-            )
+            results = _run(c.search_by_respondent("Test"))
         assert results == []
         assert c._client.get.call_count == 2
 

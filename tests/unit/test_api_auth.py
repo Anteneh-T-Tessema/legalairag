@@ -113,9 +113,7 @@ class TestRevocation:
         assert resp.status_code == 204
 
         # The revoked refresh token should no longer work
-        resp2 = client.post(
-            "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
-        )
+        resp2 = client.post("/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]})
         assert resp2.status_code == 401
 
     def test_revoke_requires_auth(self):

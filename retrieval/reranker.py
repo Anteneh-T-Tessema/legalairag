@@ -67,7 +67,7 @@ class CrossEncoderReranker:
             scores.extend(batch_scores)
 
         ranked = sorted(
-            zip(results, scores, strict=False),
+            zip(results, scores),  # noqa: B905
             key=lambda x: x[1],
             reverse=True,
         )

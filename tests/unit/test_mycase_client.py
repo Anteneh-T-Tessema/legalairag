@@ -166,9 +166,7 @@ def client() -> MyCaseClient:
 
 class TestSearchByParty:
     def test_builds_correct_params(self, client: MyCaseClient) -> None:
-        client._client.get = AsyncMock(
-            return_value=_mock_response({"results": [SAMPLE_RESULT]})
-        )
+        client._client.get = AsyncMock(return_value=_mock_response({"results": [SAMPLE_RESULT]}))
         results = asyncio.get_event_loop().run_until_complete(
             client.search_by_party("John Doe", county="Marion", case_type_code="CF")
         )
@@ -181,31 +179,21 @@ class TestSearchByParty:
         assert results[0].case_number == "49D01-2401-CF-000123"
 
     def test_strips_whitespace(self, client: MyCaseClient) -> None:
-        client._client.get = AsyncMock(
-            return_value=_mock_response({"results": []})
-        )
-        asyncio.get_event_loop().run_until_complete(
-            client.search_by_party("  John Doe  ")
-        )
+        client._client.get = AsyncMock(return_value=_mock_response({"results": []}))
+        asyncio.get_event_loop().run_until_complete(client.search_by_party("  John Doe  "))
         call_kwargs = client._client.get.call_args
         params = call_kwargs.kwargs.get("params") or call_kwargs[1].get("params")
         assert params["partyName"] == "John Doe"
 
     def test_caps_page_size_at_100(self, client: MyCaseClient) -> None:
-        client._client.get = AsyncMock(
-            return_value=_mock_response({"results": []})
-        )
-        asyncio.get_event_loop().run_until_complete(
-            client.search_by_party("Test", page_size=500)
-        )
+        client._client.get = AsyncMock(return_value=_mock_response({"results": []}))
+        asyncio.get_event_loop().run_until_complete(client.search_by_party("Test", page_size=500))
         call_kwargs = client._client.get.call_args
         params = call_kwargs.kwargs.get("params") or call_kwargs[1].get("params")
         assert params["pageSize"] == 100
 
     def test_ignores_invalid_case_type_code(self, client: MyCaseClient) -> None:
-        client._client.get = AsyncMock(
-            return_value=_mock_response({"results": []})
-        )
+        client._client.get = AsyncMock(return_value=_mock_response({"results": []}))
         asyncio.get_event_loop().run_until_complete(
             client.search_by_party("Test", case_type_code="INVALID")
         )
@@ -216,9 +204,7 @@ class TestSearchByParty:
 
 class TestSearchByCaseNumber:
     def test_returns_result(self, client: MyCaseClient) -> None:
-        client._client.get = AsyncMock(
-            return_value=_mock_response(SAMPLE_RESULT)
-        )
+        client._client.get = AsyncMock(return_value=_mock_response(SAMPLE_RESULT))
         result = asyncio.get_event_loop().run_until_complete(
             client.search_by_case_number("49D01-2401-CF-000123")
         )
@@ -229,9 +215,7 @@ class TestSearchByCaseNumber:
         req = httpx.Request("GET", "http://test")
         resp_404 = httpx.Response(404, json={"detail": "Not found"}, request=req)
         client._client.get = AsyncMock(
-            side_effect=httpx.HTTPStatusError(
-                "Not found", request=req, response=resp_404
-            )
+            side_effect=httpx.HTTPStatusError("Not found", request=req, response=resp_404)
         )
         result = asyncio.get_event_loop().run_until_complete(
             client.search_by_case_number("NONEXISTENT")
@@ -240,13 +224,9 @@ class TestSearchByCaseNumber:
 
     def test_raises_on_other_errors(self, client: MyCaseClient) -> None:
         req = httpx.Request("GET", "http://test")
-        resp_500 = httpx.Response(
-            500, json={"detail": "Server error"}, request=req
-        )
+        resp_500 = httpx.Response(500, json={"detail": "Server error"}, request=req)
         client._client.get = AsyncMock(
-            side_effect=httpx.HTTPStatusError(
-                "Server error", request=req, response=resp_500
-            )
+            side_effect=httpx.HTTPStatusError("Server error", request=req, response=resp_500)
         )
         with pytest.raises(httpx.HTTPStatusError):
             asyncio.get_event_loop().run_until_complete(
@@ -256,9 +236,7 @@ class TestSearchByCaseNumber:
 
 class TestRecentFilings:
     def test_builds_date_range_params(self, client: MyCaseClient) -> None:
-        client._client.get = AsyncMock(
-            return_value=_mock_response({"results": [SAMPLE_RESULT]})
-        )
+        client._client.get = AsyncMock(return_value=_mock_response({"results": [SAMPLE_RESULT]}))
         results = asyncio.get_event_loop().run_until_complete(
             client.recent_filings("Marion", days_back=14, case_type_code="CF")
         )
@@ -285,9 +263,7 @@ class TestRetryBehaviour:
 
         client._client.get = AsyncMock(side_effect=[resp_429, resp_200])
         with patch("ingestion.sources.indiana_courts.asyncio.sleep", new_callable=AsyncMock):
-            results = asyncio.get_event_loop().run_until_complete(
-                client.search_by_party("Test")
-            )
+            results = asyncio.get_event_loop().run_until_complete(client.search_by_party("Test"))
         assert results == []
         assert client._client.get.call_count == 2
 
@@ -300,9 +276,7 @@ class TestRetryBehaviour:
         client._client.get = AsyncMock(return_value=resp_429)
         with patch("ingestion.sources.indiana_courts.asyncio.sleep", new_callable=AsyncMock):
             with pytest.raises(RuntimeError, match="Exhausted retries"):
-                asyncio.get_event_loop().run_until_complete(
-                    client.search_by_party("Test")
-                )
+                asyncio.get_event_loop().run_until_complete(client.search_by_party("Test"))
 
 
 class TestContextManager:

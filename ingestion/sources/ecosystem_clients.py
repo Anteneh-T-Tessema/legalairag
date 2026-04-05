@@ -75,13 +75,9 @@ class _BaseEcosystemClient:
     async def __aexit__(self, *_: Any) -> None:
         await self._client.aclose()
 
-    async def _get(
-        self, path: str, params: dict[str, Any] | None = None
-    ) -> dict[str, Any]:
+    async def _get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         if not self._enabled:
-            raise RuntimeError(
-                f"{self.__class__.__name__} is disabled (no base URL configured)"
-            )
+            raise RuntimeError(f"{self.__class__.__name__} is disabled (no base URL configured)")
         async with self._semaphore:
             for attempt in range(3):
                 try:
@@ -100,9 +96,7 @@ class _BaseEcosystemClient:
                     return resp.json()  # type: ignore[return-value]
                 except httpx.HTTPStatusError:
                     raise
-            raise RuntimeError(
-                f"Exhausted retries for {self.__class__.__name__} {path}"
-            )
+            raise RuntimeError(f"Exhausted retries for {self.__class__.__name__} {path}")
 
 
 # ── Protection Order Registry ─────────────────────────────────────────────────
@@ -176,9 +170,7 @@ class ProtectionOrderRegistryClient(_BaseEcosystemClient):
                 return None
             raise
 
-    async def active_orders_by_county(
-        self, county: str
-    ) -> list[ProtectionOrder]:
+    async def active_orders_by_county(self, county: str) -> list[ProtectionOrder]:
         """List active protection orders for a given county."""
         params = {"county": _sanitize(county), "status": "Active"}
         data = await self._get("/api/orders/search", params=params)
@@ -193,9 +185,7 @@ class ProtectionOrderRegistryClient(_BaseEcosystemClient):
             county=data.get("county", ""),
             protected_party=data.get("protectedParty", ""),
             respondent=data.get("respondent", ""),
-            issued_date=date.fromisoformat(
-                data.get("issuedDate", "1970-01-01")
-            ),
+            issued_date=date.fromisoformat(data.get("issuedDate", "1970-01-01")),
             expiration_date=date.fromisoformat(exp) if exp else None,
             status=data.get("status", "Active"),
             issuing_court=data.get("issuingCourt", ""),
@@ -264,9 +254,7 @@ class CourtStatisticsClient(_BaseEcosystemClient):
                 return None
             raise
 
-    async def statewide_summary(
-        self, year: int
-    ) -> list[CaseloadReport]:
+    async def statewide_summary(self, year: int) -> list[CaseloadReport]:
         """Fetch statewide caseload summary for all counties."""
         params: dict[str, Any] = {"year": year, "scope": "statewide"}
         data = await self._get("/api/caseload/summary", params=params)
@@ -354,9 +342,7 @@ class EFilingFeedClient(_BaseEcosystemClient):
     async def get_filing(self, envelope_id: str) -> EFilingRecord | None:
         """Look up a specific e-filing envelope."""
         try:
-            data = await self._get(
-                f"/api/filings/{_sanitize(envelope_id)}"
-            )
+            data = await self._get(f"/api/filings/{_sanitize(envelope_id)}")
             return self._parse(data)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 404:
@@ -372,9 +358,7 @@ class EFilingFeedClient(_BaseEcosystemClient):
             filed_by=data.get("filedBy", ""),
             court=data.get("court", ""),
             county=data.get("county", ""),
-            accepted_date=date.fromisoformat(
-                data.get("acceptedDate", "1970-01-01")
-            ),
+            accepted_date=date.fromisoformat(data.get("acceptedDate", "1970-01-01")),
             document_count=data.get("documentCount", 0),
             metadata=data,
         )
@@ -425,9 +409,7 @@ class BMVClient(_BaseEcosystemClient):
             timeout=timeout,
         )
 
-    async def lookup_by_case(
-        self, case_number: str
-    ) -> BMVDrivingRecord | None:
+    async def lookup_by_case(self, case_number: str) -> BMVDrivingRecord | None:
         """Look up driving record linked to a traffic/criminal case."""
         params = {"caseNumber": _sanitize(case_number)}
         try:
@@ -438,9 +420,7 @@ class BMVClient(_BaseEcosystemClient):
                 return None
             raise
 
-    async def lookup_by_license(
-        self, license_number: str
-    ) -> BMVDrivingRecord | None:
+    async def lookup_by_license(self, license_number: str) -> BMVDrivingRecord | None:
         """Look up driving record by license number."""
         sanitized = _sanitize(license_number)
         try:
@@ -573,9 +553,7 @@ class ECRWClient(_BaseEcosystemClient):
             document_type=data.get("documentType", "Unknown"),
             court=data.get("court", ""),
             county=data.get("county", ""),
-            filed_date=date.fromisoformat(
-                data.get("filedDate", "1970-01-01")
-            ),
+            filed_date=date.fromisoformat(data.get("filedDate", "1970-01-01")),
             page_count=data.get("pageCount", 0),
             download_url=data.get("downloadUrl", ""),
             metadata=data,

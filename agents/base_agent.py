@@ -148,10 +148,7 @@ class BaseAgent(ABC):
 
                 session = aioboto3.Session()
                 async with session.client("s3") as s3:
-                    key = (
-                        f"audit/{run.agent_name}/{run.started_at:%Y/%m/%d}/"
-                        f"{run.run_id}.json"
-                    )
+                    key = f"audit/{run.agent_name}/{run.started_at:%Y/%m/%d}/{run.run_id}.json"
                     await s3.put_object(
                         Bucket=s3_bucket,
                         Key=key,

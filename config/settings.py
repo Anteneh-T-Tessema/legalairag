@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     app_env: str = "development"
     log_level: str = "INFO"
     api_secret_key: SecretStr = Field(
-        default="dev-secret-change-in-production",
-        description="HMAC signing key for API",
+        default="dev-secret-change-in-production!",
+        description="HMAC signing key for API (>=32 bytes)",
     )
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
 
