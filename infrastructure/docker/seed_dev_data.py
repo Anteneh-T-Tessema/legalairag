@@ -10,8 +10,6 @@ Generates deterministic embeddings (no Bedrock needed).
 from __future__ import annotations
 
 import hashlib
-import struct
-import sys
 
 import psycopg
 
@@ -41,7 +39,10 @@ CHUNKS = [
             "if the fair market value of the property is at least $50,000."
         ),
         "citations": ["IC 35-43-4-2"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "35", "article": "43"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "43",
+        },
     },
     {
         "chunk_id": "ic-35-43-4-2-002",
@@ -57,7 +58,10 @@ CHUNKS = [
             "under $750, Level 5 felony if $750 or more."
         ),
         "citations": ["IC 35-43-4-2"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "35", "article": "43"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "43",
+        },
     },
     {
         "chunk_id": "ic-35-43-4-2-003",
@@ -73,7 +77,10 @@ CHUNKS = [
             "IC 35-50-2-6 (Level 5), IC 35-50-3-2 (Class A misdemeanor)."
         ),
         "citations": ["IC 35-43-4-2", "IC 35-50-2-7", "IC 35-50-2-6", "IC 35-50-3-2"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "35", "article": "50"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "50",
+        },
     },
     {
         "chunk_id": "ic-35-43-4-3-001",
@@ -88,7 +95,10 @@ CHUNKS = [
             "the theft statute: Level 6 felony ($750-$50,000), Level 5 felony ($50,000+)."
         ),
         "citations": ["IC 35-43-4-3"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "35", "article": "43"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "43",
+        },
     },
     {
         "chunk_id": "ic-35-43-4-2a-001",
@@ -104,7 +114,10 @@ CHUNKS = [
             "to theft when intent to permanently deprive cannot be proven."
         ),
         "citations": ["IC 35-43-4-2.5"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "35", "article": "43"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "43",
+        },
     },
     {
         "chunk_id": "ic-35-43-2-1-001",
@@ -120,7 +133,10 @@ CHUNKS = [
             "if a dwelling with a deadly weapon resulting in serious bodily injury."
         ),
         "citations": ["IC 35-43-2-1"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "35", "article": "43"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "43",
+        },
     },
     {
         "chunk_id": "ic-35-43-4-2-enhance-001",
@@ -136,7 +152,10 @@ CHUNKS = [
             "is a Class A misdemeanor under IC 35-43-4-2(a)."
         ),
         "citations": ["IC 35-43-4-2", "IC 35-50-2-8", "IC 35-45-6-2"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "35", "article": "43"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "43",
+        },
     },
     {
         "chunk_id": "eviction-ic-32-31-001",
@@ -152,7 +171,10 @@ CHUNKS = [
             "complaint in small claims court. The tenant has the right to appear and contest."
         ),
         "citations": ["IC 32-31-1"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "32", "article": "31"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "32", "article": "31",
+        },
     },
     {
         "chunk_id": "eviction-ic-32-31-002",
@@ -168,7 +190,10 @@ CHUNKS = [
             "actual damages, attorney fees, and punitive damages."
         ),
         "citations": ["IC 32-31-1-6"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "32", "article": "31"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "32", "article": "31",
+        },
     },
     {
         "chunk_id": "dui-ic-9-30-5-001",
@@ -184,7 +209,10 @@ CHUNKS = [
             "Level 6 felony. Penalties include license suspension, fines, and possible jail."
         ),
         "citations": ["IC 9-30-5"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "9", "article": "30"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "9", "article": "30",
+        },
     },
     {
         "chunk_id": "child-custody-ic-31-17-001",
@@ -201,7 +229,10 @@ CHUNKS = [
             "the 'best interests of the child' standard per IC 31-17-2-8."
         ),
         "citations": ["IC 31-17-2", "IC 31-17-2-8"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "31", "article": "17"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "31", "article": "17",
+        },
     },
     {
         "chunk_id": "divorce-ic-31-15-001",
@@ -218,7 +249,10 @@ CHUNKS = [
             "situations, or rehabilitative maintenance."
         ),
         "citations": ["IC 31-15-2", "IC 31-15-2-3", "IC 31-15-7-5", "IC 31-15-7-2"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "31", "article": "15"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "31", "article": "15",
+        },
     },
     # ── Tax evasion / tax fraud ───────────────────────────────────────────────
     {
@@ -236,7 +270,10 @@ CHUNKS = [
             "treated separately from fraudulent evasion."
         ),
         "citations": ["IC 6-8.1-10-1"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "6", "article": "8.1"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "6", "article": "8.1",
+        },
     },
     {
         "chunk_id": "ic-6-8-1-10-2-001",
@@ -254,7 +291,10 @@ CHUNKS = [
             "applicable interest under IC 6-8.1-10-4."
         ),
         "citations": ["IC 6-8.1-10-2", "IC 6-8.1-10-4"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "6", "article": "8.1"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "6", "article": "8.1",
+        },
     },
     {
         "chunk_id": "ic-6-8-1-10-4-001",
@@ -273,7 +313,10 @@ CHUNKS = [
             "and sales tax."
         ),
         "citations": ["IC 6-8.1-10-4", "IC 6-8.1-10-1"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "6", "article": "8.1"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "6", "article": "8.1",
+        },
     },
     {
         "chunk_id": "ic-6-8-1-10-sentencing-001",
@@ -291,7 +334,10 @@ CHUNKS = [
             "fines. Indiana may also seek injunctive relief and seizure of assets."
         ),
         "citations": ["IC 6-8.1-10-2", "IC 35-50-2-7", "IC 35-50-2-6"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "6", "article": "8.1"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "6", "article": "8.1",
+        },
     },
     {
         "chunk_id": "ic-6-8-1-10-elements-001",
@@ -309,7 +355,10 @@ CHUNKS = [
             "concealing income, or structuring transactions to avoid reporting."
         ),
         "citations": ["IC 6-8.1-10-2"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "6", "article": "8.1"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "6", "article": "8.1",
+        },
     },
     {
         "chunk_id": "ic-6-3-2-001",
@@ -326,7 +375,10 @@ CHUNKS = [
             "evasion. County income taxes are additional surtaxes collected under IC 6-3.6."
         ),
         "citations": ["IC 6-3-2-1", "IC 6-3-4-8", "IC 6-3.6"],
-        "metadata": {"court": "indiana", "jurisdiction": "Indiana", "type": "statute", "title": "6", "article": "3"},
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "6", "article": "3",
+        },
     },
 ]
 
@@ -336,7 +388,7 @@ def deterministic_vector(text: str, dim: int = 1024) -> list[float]:
     import random as _random
 
     seed = int(hashlib.sha256(text.encode()).hexdigest(), 16) % (2**32)
-    rng = _random.Random(seed)
+    rng = _random.Random(seed)  # noqa: S311 — non-cryptographic deterministic embeddings
     floats = [rng.gauss(0.0, 1.0) for _ in range(dim)]
     norm = max(sum(x * x for x in floats) ** 0.5, 1e-9)
     return [x / norm for x in floats]

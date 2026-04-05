@@ -94,7 +94,7 @@ class BedrockEmbedder:
         import random as _random
 
         seed = int(hashlib.sha256(text.encode()).hexdigest(), 16) % (2**32)
-        rng = _random.Random(seed)
+        rng = _random.Random(seed)  # noqa: S311 — non-cryptographic deterministic embeddings
         floats = [rng.gauss(0.0, 1.0) for _ in range(1024)]
         norm = max(sum(x * x for x in floats) ** 0.5, 1e-9)
         return [x / norm for x in floats]

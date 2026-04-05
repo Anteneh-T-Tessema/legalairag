@@ -23,5 +23,11 @@ def __getattr__(name: str):  # noqa: C901
         return IngestionWorker
     if name in ("IngestionMessage", "SQSConsumer", "SQSProducer"):
         from ingestion.queue.sqs import IngestionMessage, SQSConsumer, SQSProducer
-        return {"IngestionMessage": IngestionMessage, "SQSConsumer": SQSConsumer, "SQSProducer": SQSProducer}[name]
+
+        _sqs_exports = {
+            "IngestionMessage": IngestionMessage,
+            "SQSConsumer": SQSConsumer,
+            "SQSProducer": SQSProducer,
+        }
+        return _sqs_exports[name]
     raise AttributeError(f"module 'ingestion' has no attribute {name!r}")

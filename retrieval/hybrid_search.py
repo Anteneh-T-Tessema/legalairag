@@ -199,9 +199,10 @@ class HybridSearcher:
             ORDER BY score DESC
             LIMIT %s;
         """
-        # SQL order: ts_rank %s (SELECT), WHERE tsvector %s, [WHERE jurisdiction %s], [WHERE case_type %s], LIMIT %s
-        # params = [query_text, [jurisdiction?], [case_type?], n]  — prepend one more query_text for ts_rank
-        params_final: list[Any] = [query_text] + params
+        # SQL order: ts_rank %s (SELECT), WHERE tsvector %s,
+        # [WHERE jurisdiction %s], [WHERE case_type %s], LIMIT %s
+        # params = [query_text, [jurisdiction?], [case_type?], n]
+        params_final: list[Any] = [query_text] + params  # prepend ts_rank query_text
 
         async with conn.cursor() as cur:
             await cur.execute(sql, params_final)
