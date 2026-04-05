@@ -65,3 +65,28 @@ class TestRateLimit:
         # so these headers should not be present.
         # (settings.app_env defaults to "development")
         assert "X-RateLimit-Limit" not in resp.headers
+
+
+class TestRateLimiterRedisReset:
+    """Verify that a failed Redis operation resets the cached client."""
+
+    def test_redis_reset_on_error(self):
+        from unittest.mock import MagicMock
+
+        import api.middleware.rate_limit as rl_mod
+
+        # Simulate a previously-cached (now-broken) Redis client
+        fake_redis = MagicMock()
+        fake_redis.incr.side_effect = ConnectionError("gone")
+        rl_mod._redis = fake_redis
+
+        # _redis_consume should raise RuntimeError *and* reset _redis to None
+        import pytest
+
+        with pytest.raises(RuntimeError, match="redis error"):
+            rl_mod._redis_consume("127.0.0.1")
+
+        assert rl_mod._redis is None
+
+        # Cleanup
+        rl_mod._redis = None

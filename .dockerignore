@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Tests & docs (not needed in production image)
+tests/
+docs/
+*.md
+
+# Node / UI
+ui/node_modules/
+ui/.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.yml
+infrastructure/docker/
+
+# CDK
+infrastructure/cdk/
+
+# Local env
+.env
+.env.*
+pyrightconfig.json
+Makefile

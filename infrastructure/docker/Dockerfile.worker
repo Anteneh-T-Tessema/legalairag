@@ -3,8 +3,17 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY pyproject.toml .
+
+COPY agents/ agents/
+COPY api/ api/
+COPY config/ config/
+COPY generation/ generation/
+COPY ingestion/ ingestion/
+COPY retrieval/ retrieval/
+
 RUN pip install --no-cache-dir .
 
-COPY . .
+RUN useradd --create-home appuser
+USER appuser
 
 CMD ["python", "-m", "ingestion.pipeline.worker"]

@@ -51,7 +51,17 @@ class Role(StrEnum):
 # ── Token blacklist (revocation) ─────────────────────────────────────────────
 
 _blacklist_lock = threading.Lock()
-_blacklist: set[str] = set()  # jti values of revoked tokens
+_blacklist: dict[str, float] = {}  # jti → expiry timestamp (UTC)
+
+_BLACKLIST_MAX_SIZE = 10_000  # safety cap before forced prune
+
+
+def _prune_blacklist() -> None:
+    """Remove expired entries from the in-memory blacklist.  Caller must hold _blacklist_lock."""
+    now = datetime.now(timezone.utc).timestamp()
+    expired = [jti for jti, exp_ts in _blacklist.items() if exp_ts <= now]
+    for jti in expired:
+        del _blacklist[jti]
 
 
 def _get_revocation_redis():
@@ -82,7 +92,9 @@ def revoke_token(jti: str, expires_at: datetime) -> None:
         except Exception:
             logger.warning("Redis revocation failed, using in-memory fallback")
     with _blacklist_lock:
-        _blacklist.add(jti)
+        if len(_blacklist) >= _BLACKLIST_MAX_SIZE:
+            _prune_blacklist()
+        _blacklist[jti] = expires_at.timestamp()
 
 
 def is_token_revoked(jti: str) -> bool:
@@ -94,7 +106,13 @@ def is_token_revoked(jti: str) -> bool:
         except Exception:  # noqa: S110 — intentional fallback to in-memory blacklist
             pass
     with _blacklist_lock:
-        return jti in _blacklist
+        exp_ts = _blacklist.get(jti)
+        if exp_ts is None:
+            return False
+        if exp_ts <= datetime.now(timezone.utc).timestamp():
+            del _blacklist[jti]
+            return False
+        return True
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────

@@ -2,9 +2,20 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 from fastapi.testclient import TestClient
 
-from api.auth import Role, create_access_token, create_refresh_token
+from api.auth import (
+    Role,
+    _blacklist,
+    _blacklist_lock,
+    _prune_blacklist,
+    create_access_token,
+    create_refresh_token,
+    is_token_revoked,
+    revoke_token,
+)
 from api.main import app
 
 client = TestClient(app, raise_server_exceptions=False)
@@ -177,3 +188,51 @@ class TestHealth:
         body = resp.json()
         assert body["status"] == "ok"
         assert "env" in body
+
+
+# ── Blacklist TTL eviction ───────────────────────────────────────────────────
+
+
+class TestBlacklistEviction:
+    """Verify in-memory blacklist entries expire and get pruned."""
+
+    def _clear_blacklist(self):
+        with _blacklist_lock:
+            _blacklist.clear()
+
+    def test_revoked_token_is_detected(self):
+        self._clear_blacklist()
+        future = datetime.now(timezone.utc) + timedelta(hours=1)
+        revoke_token("test-jti-1", future)
+        assert is_token_revoked("test-jti-1") is True
+
+    def test_expired_entry_evicted_on_check(self):
+        self._clear_blacklist()
+        past = datetime.now(timezone.utc) - timedelta(seconds=1)
+        with _blacklist_lock:
+            _blacklist["old-jti"] = past.timestamp()
+        # Should return False and remove the entry
+        assert is_token_revoked("old-jti") is False
+        with _blacklist_lock:
+            assert "old-jti" not in _blacklist
+
+    def test_prune_removes_expired(self):
+        self._clear_blacklist()
+        past = datetime.now(timezone.utc) - timedelta(seconds=10)
+        future = datetime.now(timezone.utc) + timedelta(hours=1)
+        with _blacklist_lock:
+            _blacklist["expired-1"] = past.timestamp()
+            _blacklist["expired-2"] = past.timestamp()
+            _blacklist["valid-1"] = future.timestamp()
+            _prune_blacklist()
+        with _blacklist_lock:
+            assert "expired-1" not in _blacklist
+            assert "expired-2" not in _blacklist
+            assert "valid-1" in _blacklist
+
+    def test_already_expired_token_not_added(self):
+        self._clear_blacklist()
+        past = datetime.now(timezone.utc) - timedelta(seconds=1)
+        revoke_token("skip-jti", past)
+        with _blacklist_lock:
+            assert "skip-jti" not in _blacklist

@@ -59,6 +59,7 @@ def _redis_consume(client_ip: str) -> tuple[bool, int]:
 
     Returns (allowed, remaining).
     """
+    global _redis
     r = _get_redis()
     if r is None:
         raise RuntimeError("no redis")
@@ -73,6 +74,8 @@ def _redis_consume(client_ip: str) -> tuple[bool, int]:
         remaining = max(0, _RATE_LIMIT - current)
         return current <= _RATE_LIMIT, remaining
     except Exception as exc:
+        # Connection went stale — reset so next call attempts reconnection
+        _redis = None
         raise RuntimeError("redis error") from exc
 
 
