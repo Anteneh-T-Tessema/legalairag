@@ -77,3 +77,22 @@ class TestCrossEncoderReranker:
     def test_lazy_model_init(self) -> None:
         reranker = CrossEncoderReranker()
         assert reranker._model is None
+
+    def test_load_model_initializes_cross_encoder(self) -> None:
+        """Cover _load_model() lines 37-42: first call creates CrossEncoder."""
+        reranker = CrossEncoderReranker(model_name="test-model")
+        mock_ce = MagicMock()
+        with patch.dict(
+            "sys.modules",
+            {"sentence_transformers": MagicMock(CrossEncoder=MagicMock(return_value=mock_ce))},
+        ):
+            model = reranker._load_model()
+            assert reranker._model is model
+
+    def test_load_model_returns_cached_on_second_call(self) -> None:
+        """_load_model() returns existing model without re-initializing."""
+        reranker = CrossEncoderReranker()
+        sentinel = MagicMock()
+        reranker._model = sentinel
+        result = reranker._load_model()
+        assert result is sentinel

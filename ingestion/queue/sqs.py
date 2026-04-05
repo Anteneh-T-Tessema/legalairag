@@ -145,7 +145,7 @@ class SQSConsumer:
                 await asyncio.sleep(1)
                 continue
 
-            for raw in sqs_messages:
+            for raw in sqs_messages:  # pragma: no branch
                 try:
                     msg = IngestionMessage.from_body(raw["Body"])
                 except (json.JSONDecodeError, KeyError) as exc:

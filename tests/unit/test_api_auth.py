@@ -236,3 +236,217 @@ class TestBlacklistEviction:
         revoke_token("skip-jti", past)
         with _blacklist_lock:
             assert "skip-jti" not in _blacklist
+
+
+# ── hash_password ────────────────────────────────────────────────────────────
+
+
+class TestHashPassword:
+    def test_hash_password_auto_generates_salt(self):
+        """hash_password(pass, salt=None) generates a random salt (line 148)."""
+        from api.auth import hash_password
+
+        hashed, salt = hash_password("secret")
+        assert isinstance(salt, str)
+        assert len(salt) == 64  # 32 hex bytes
+        # Same password + same salt should reproduce the same hash
+        hashed2, _ = hash_password("secret", salt=salt)
+        assert hashed == hashed2
+
+    def test_hash_password_with_explicit_salt(self):
+        from api.auth import hash_password
+
+        hashed, returned_salt = hash_password("mypass", salt="fixed-salt")
+        assert returned_salt == "fixed-salt"
+
+
+# ── decode_token: ExpiredSignatureError branch ───────────────────────────────
+
+
+class TestDecodeToken:
+    def test_expired_token_raises_401(self):
+        """jwt.ExpiredSignatureError → HTTPException 401 'Token expired' (line 218)."""
+        import jwt as _jwt
+        from fastapi import HTTPException
+
+        from api.auth import _ALGORITHM, _SECRET, decode_token
+
+        past = datetime.now(timezone.utc) - timedelta(hours=2)
+        expired_token = _jwt.encode(
+            {
+                "sub": "admin",
+                "role": "admin",
+                "iat": (past - timedelta(minutes=60)).timestamp(),
+                "exp": (past).timestamp(),
+                "jti": "expired-jti-001",
+            },
+            _SECRET,
+            algorithm=_ALGORITHM,
+        )
+        import pytest as _pytest
+
+        with _pytest.raises(HTTPException) as exc_info:
+            decode_token(expired_token)
+        assert exc_info.value.status_code == 401
+        assert "expired" in exc_info.value.detail.lower()
+
+
+# ── get_current_user: missing role ───────────────────────────────────────────
+
+
+class TestGetCurrentUser:
+    def test_token_without_role_raises_401(self):
+        """TokenPayload.role is None → HTTPException 401 (line 238)."""
+        import jwt as _jwt
+
+        from api.auth import _ALGORITHM, _SECRET
+
+        now = datetime.now(timezone.utc)
+        no_role_token = _jwt.encode(
+            {
+                "sub": "norole",
+                # intentionally omit "role"
+                "iat": now.timestamp(),
+                "exp": (now + timedelta(hours=1)).timestamp(),
+                "jti": "norole-jti-001",
+            },
+            _SECRET,
+            algorithm=_ALGORITHM,
+        )
+        resp = client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {no_role_token}"},
+        )
+        assert resp.status_code == 401
+
+
+# ── Redis revocation paths ───────────────────────────────────────────────────
+
+
+class TestRedisRevocation:
+    def test_get_revocation_redis_with_valid_url(self):
+        """_get_revocation_redis() exercises the Redis import path (lines 73-80)."""
+        from unittest.mock import MagicMock, patch
+
+        from api.auth import _get_revocation_redis
+
+        mock_redis_client = MagicMock()
+        mock_redis_client.ping.return_value = True
+        mock_redis_lib = MagicMock()
+        mock_redis_lib.Redis.from_url.return_value = mock_redis_client
+
+        with (
+            patch("api.auth.settings") as mock_settings,
+            patch.dict("sys.modules", {"redis": mock_redis_lib}),
+        ):
+            mock_settings.redis_url = "redis://localhost:6379"
+            r = _get_revocation_redis()
+
+        assert r is mock_redis_client
+
+    def test_get_revocation_redis_exception_returns_none(self):
+        """Redis import raises → return None (lines 79-80)."""
+        from unittest.mock import MagicMock, patch
+
+        from api.auth import _get_revocation_redis
+
+        mock_redis_lib = MagicMock()
+        mock_redis_lib.Redis.from_url.side_effect = Exception("refused")
+
+        with (
+            patch("api.auth.settings") as mock_settings,
+            patch.dict("sys.modules", {"redis": mock_redis_lib}),
+        ):
+            mock_settings.redis_url = "redis://localhost:6379"
+            r = _get_revocation_redis()
+
+        assert r is None
+
+    def test_revoke_token_via_redis_success(self):
+        """revoke_token() uses Redis setex when available (lines 90-92)."""
+        from unittest.mock import MagicMock, patch
+
+        from api.auth import revoke_token
+
+        mock_redis = MagicMock()
+        future = datetime.now(timezone.utc) + timedelta(hours=1)
+        with patch("api.auth._get_revocation_redis", return_value=mock_redis):
+            revoke_token("redis-jti", future)
+        mock_redis.setex.assert_called_once()
+
+    def test_revoke_token_redis_exception_falls_back_to_memory(self):
+        """revoke_token() falls back to in-memory on Redis failure (lines 93-98)."""
+        from unittest.mock import MagicMock, patch
+
+        from api.auth import _blacklist, _blacklist_lock, revoke_token
+
+        mock_redis = MagicMock()
+        mock_redis.setex.side_effect = Exception("connection error")
+        future = datetime.now(timezone.utc) + timedelta(hours=1)
+        jti = "fallback-jti-001"
+
+        with (
+            patch("api.auth._get_revocation_redis", return_value=mock_redis),
+            _blacklist_lock,
+        ):
+            _blacklist.pop(jti, None)
+
+        with patch("api.auth._get_revocation_redis", return_value=mock_redis):
+            revoke_token(jti, future)
+
+        with _blacklist_lock:
+            assert jti in _blacklist
+            _blacklist.pop(jti, None)
+
+    def test_is_token_revoked_via_redis_success(self):
+        """is_token_revoked() queries Redis when available (lines 105-106)."""
+        from unittest.mock import MagicMock, patch
+
+        from api.auth import is_token_revoked
+
+        mock_redis = MagicMock()
+        mock_redis.exists.return_value = 1
+        with patch("api.auth._get_revocation_redis", return_value=mock_redis):
+            assert is_token_revoked("some-jti") is True
+
+    def test_is_token_revoked_redis_exception_falls_back(self):
+        """is_token_revoked() falls back to memory on Redis error (lines 107-108)."""
+        from unittest.mock import MagicMock, patch
+
+        from api.auth import _blacklist, _blacklist_lock, is_token_revoked
+
+        mock_redis = MagicMock()
+        mock_redis.exists.side_effect = Exception("timeout")
+        jti = "memory-fallback-jti"
+        future = datetime.now(timezone.utc) + timedelta(hours=1)
+        with _blacklist_lock:
+            _blacklist[jti] = future.timestamp()
+        with patch("api.auth._get_revocation_redis", return_value=mock_redis):
+            result = is_token_revoked(jti)
+        assert result is True
+        with _blacklist_lock:
+            _blacklist.pop(jti, None)
+
+
+# ── Blacklist max size prune ─────────────────────────────────────────────────
+
+
+class TestBlacklistPrune:
+    def test_revoke_triggers_prune_at_max_size(self):
+        """When blacklist hits _BLACKLIST_MAX_SIZE, _prune_blacklist() is called (line 97)."""
+        from api.auth import _BLACKLIST_MAX_SIZE, _blacklist, _blacklist_lock, revoke_token
+
+        with _blacklist_lock:
+            _blacklist.clear()
+            # Fill with already-expired entries so prune will remove them
+            past_ts = (datetime.now(timezone.utc) - timedelta(hours=1)).timestamp()
+            for i in range(_BLACKLIST_MAX_SIZE):
+                _blacklist[f"fill-{i}"] = past_ts
+
+        future = datetime.now(timezone.utc) + timedelta(hours=1)
+        revoke_token("trigger-prune-jti", future)
+
+        with _blacklist_lock:
+            # All expired fill entries should have been pruned
+            assert "fill-0" not in _blacklist
+            _blacklist.clear()

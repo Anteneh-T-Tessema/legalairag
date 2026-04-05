@@ -317,3 +317,85 @@ async def test_download_dispatches_to_http_for_non_s3_source():
 
     worker._download_http.assert_awaited_once_with("https://courts.in.gov/doc.pdf")
     worker._download_s3.assert_not_awaited()
+
+
+# ── IngestionWorker.__init__ ────────────────────────────────────────────────────
+
+
+def test_ingestion_worker_init_creates_all_dependencies():
+    """Cover lines 39-45: __init__ body instantiates all collaborators."""
+    with (
+        patch("ingestion.pipeline.worker.SQSConsumer") as mock_sqs,
+        patch("ingestion.pipeline.worker.BedrockEmbedder") as mock_emb,
+        patch("ingestion.pipeline.worker.LegalChunker") as mock_chunker,
+        patch("ingestion.pipeline.worker.VectorIndexer") as mock_indexer,
+        patch("ingestion.pipeline.worker.boto3") as mock_boto,
+        patch("ingestion.pipeline.worker.settings") as mock_settings,
+    ):
+        mock_settings.ingestion_worker_concurrency = 2
+        mock_settings.aws_region = "us-east-1"
+
+        worker = IngestionWorker(concurrency=2)
+
+    assert worker._concurrency == 2
+    mock_chunker.assert_called_once()
+    mock_emb.assert_called_once()
+    mock_indexer.assert_called_once()
+    mock_boto.client.assert_called_once()
+    mock_sqs.assert_called_once()
+
+
+# ── IngestionWorker.run() ───────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_run_creates_tasks_for_each_message():
+    """Cover lines 49-55: run() spawns a task per message and registers discard callback."""
+    worker = _make_worker()
+    worker._concurrency = 4  # high to avoid backpressure in this test
+    worker._semaphore = asyncio.Semaphore(4)
+    worker._process_with_ack = AsyncMock()
+
+    msg = _make_message()
+
+    async def _one_message():
+        yield msg, "rh-run-1"
+
+    worker._consumer.receive = _one_message
+    await worker.run()
+    # With concurrency=4, there's no backpressure wait, so the task is scheduled
+    # but may not have fully run. Verify the coroutine was at least called.
+    assert worker._process_with_ack.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_run_applies_backpressure_when_at_concurrency():
+    """Cover lines 58-59: backpressure wait fires when tasks == concurrency."""
+    worker = _make_worker()
+    worker._concurrency = 1  # so backpressure fires after first message
+    worker._semaphore = asyncio.Semaphore(1)
+    worker._process_with_ack = AsyncMock()
+
+    msg = _make_message()
+
+    async def _one_message():
+        yield msg, "rh-bp-1"
+
+    worker._consumer.receive = _one_message
+    await worker.run()
+    worker._process_with_ack.assert_awaited_once_with(msg, "rh-bp-1")
+
+
+@pytest.mark.asyncio
+async def test_run_with_empty_receive_returns_immediately():
+    """Cover 52->exit: run() exits cleanly when the consumer yields no messages."""
+    worker = _make_worker()
+    worker._process_with_ack = AsyncMock()
+
+    async def _no_messages():
+        return
+        yield  # make it an async generator
+
+    worker._consumer.receive = _no_messages
+    await worker.run()
+    worker._process_with_ack.assert_not_awaited()

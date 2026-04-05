@@ -256,6 +256,52 @@ class TestUpsertCitationEdge:
 # ── get_stale_sources ─────────────────────────────────────────────────────────
 
 
+# ── _get_conn / _ensure_schema ───────────────────────────────────────────────
+
+
+class TestGetConn:
+    @pytest.mark.asyncio
+    async def test_get_conn_creates_connection_when_none(self):
+        """Cover lines 81-83: connect + register_vector + _ensure_schema."""
+        with patch("retrieval.indexer.settings") as s:
+            s.database_url = "postgresql://localhost/test"
+            s.vector_dimension = 1024
+            from retrieval.indexer import VectorIndexer
+
+            indexer = VectorIndexer(database_url="postgresql://localhost/test")
+            mock_conn, cursor = _mock_conn()
+
+            with (
+                patch(
+                    "retrieval.indexer.psycopg.AsyncConnection.connect",
+                    new=AsyncMock(return_value=mock_conn),
+                ) as mock_connect,
+                patch("retrieval.indexer.register_vector", new=AsyncMock()) as mock_rv,
+            ):
+                conn = await indexer._get_conn()
+                mock_connect.assert_awaited_once()
+                mock_rv.assert_awaited_once_with(mock_conn)
+                assert conn is mock_conn
+
+    @pytest.mark.asyncio
+    async def test_get_conn_returns_cached_connection(self):
+        """_get_conn returns existing open connection without reconnecting."""
+        with patch("retrieval.indexer.settings") as s:
+            s.database_url = "postgresql://localhost/test"
+            s.vector_dimension = 1024
+            from retrieval.indexer import VectorIndexer
+
+            indexer = VectorIndexer()
+            mock_conn, _ = _mock_conn()
+            mock_conn.closed = False
+            indexer._conn = mock_conn
+
+            with patch("retrieval.indexer.psycopg.AsyncConnection.connect") as mock_connect:
+                conn = await indexer._get_conn()
+                mock_connect.assert_not_called()
+            assert conn is mock_conn
+
+
 class TestGetStaleSources:
     @pytest.mark.asyncio
     async def test_returns_source_ids(self):

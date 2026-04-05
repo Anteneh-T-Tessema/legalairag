@@ -97,3 +97,54 @@ class TestBedrockEmbedder:
         embedder, _ = self._make_embedder()
         vector = embedder._invoke_sync("hello")
         assert vector == [0.1] * 1024
+
+    def test_embed_text_dev_fallback_on_exception(self):
+        """Cover lines 84-87: when Bedrock raises in dev mode, return deterministic vector."""
+        embedder, mock_bedrock = self._make_embedder()
+        mock_bedrock.invoke_model.side_effect = Exception("Bedrock unavailable")
+
+        with patch("ingestion.pipeline.embedder.settings") as mock_settings:
+            mock_settings.app_env = "development"
+            mock_settings.aws_region = "us-east-1"
+            vector = _run(embedder._embed_text("test text"))
+
+        assert isinstance(vector, list)
+        assert len(vector) == 1024
+
+    def test_embed_text_raises_in_production_on_exception(self):
+        """Cover line 88: when Bedrock raises in prod mode, re-raise the exception."""
+        import pytest
+
+        embedder, mock_bedrock = self._make_embedder()
+        mock_bedrock.invoke_model.side_effect = RuntimeError("Bedrock down")
+
+        with patch("ingestion.pipeline.embedder.settings") as mock_settings:
+            mock_settings.app_env = "production"
+            mock_settings.aws_region = "us-east-1"
+            with pytest.raises(RuntimeError, match="Bedrock down"):
+                _run(embedder._embed_text("test text"))
+
+    def test_deterministic_vector_is_normalized(self):
+        """Cover lines 93-100: _deterministic_vector returns a unit-normalized vector."""
+        from ingestion.pipeline.embedder import BedrockEmbedder
+
+        vec = BedrockEmbedder._deterministic_vector("some legal text")
+        assert len(vec) == 1024
+        norm = sum(x * x for x in vec) ** 0.5
+        assert abs(norm - 1.0) < 1e-5
+
+    def test_deterministic_vector_is_reproducible(self):
+        """Same input always produces the same vector."""
+        from ingestion.pipeline.embedder import BedrockEmbedder
+
+        v1 = BedrockEmbedder._deterministic_vector("hello")
+        v2 = BedrockEmbedder._deterministic_vector("hello")
+        assert v1 == v2
+
+    def test_deterministic_vector_differs_for_different_inputs(self):
+        """Different inputs produce different vectors."""
+        from ingestion.pipeline.embedder import BedrockEmbedder
+
+        v1 = BedrockEmbedder._deterministic_vector("hello")
+        v2 = BedrockEmbedder._deterministic_vector("world")
+        assert v1 != v2

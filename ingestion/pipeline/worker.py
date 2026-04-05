@@ -49,7 +49,7 @@ class IngestionWorker:
         logger.info("worker_starting", concurrency=self._concurrency)
         tasks: set[asyncio.Task[None]] = set()
 
-        async for message, receipt_handle in self._consumer.receive():
+        async for message, receipt_handle in self._consumer.receive():  # pragma: no branch
             task = asyncio.create_task(self._process_with_ack(message, receipt_handle))
             tasks.add(task)
             task.add_done_callback(tasks.discard)

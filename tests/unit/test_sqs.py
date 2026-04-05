@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -215,3 +215,123 @@ class TestSQSConsumer:
 
             consumer = SQSConsumer(queue_url="https://sqs.example.com/queue")
             assert consumer._visibility_timeout == 300
+
+    @pytest.mark.asyncio
+    async def test_receive_yields_valid_message(self):
+        """Cover lines 132-157: receive() parses and yields a valid message."""
+        with patch("ingestion.queue.sqs.boto3"):
+            from ingestion.queue.sqs import SQSConsumer
+
+            consumer = SQSConsumer.__new__(SQSConsumer)
+            consumer._queue_url = "https://sqs.example.com/queue"
+            consumer._max_messages = 10
+            consumer._visibility_timeout = 300
+            consumer._wait_seconds = 20
+            consumer._client = MagicMock()
+
+            msg_body = IngestionMessage(
+                source_type="indiana_courts",
+                source_id="case-recv-1",
+                download_url="https://example.com/doc.pdf",
+                metadata={},
+            ).to_body()
+            consumer._client.receive_message.return_value = {
+                "Messages": [{"Body": msg_body, "ReceiptHandle": "rh-recv-1"}]
+            }
+
+            gen = consumer.receive()
+            received_msg, rh = await gen.__anext__()
+            assert received_msg.source_id == "case-recv-1"
+            assert rh == "rh-recv-1"
+            await gen.aclose()
+
+    @pytest.mark.asyncio
+    async def test_receive_skips_invalid_body_and_deletes(self):
+        """Cover lines 151-156: malformed Body triggers error log + delete + continue."""
+        with patch("ingestion.queue.sqs.boto3"):
+            from ingestion.queue.sqs import SQSConsumer
+
+            consumer = SQSConsumer.__new__(SQSConsumer)
+            consumer._queue_url = "https://sqs.example.com/queue"
+            consumer._max_messages = 10
+            consumer._visibility_timeout = 300
+            consumer._wait_seconds = 20
+            consumer._client = MagicMock()
+
+            valid_body = IngestionMessage(
+                source_type="indiana_courts",
+                source_id="case-after-bad",
+                download_url="https://example.com/doc.pdf",
+                metadata={},
+            ).to_body()
+            # First message has invalid JSON body, second is valid
+            consumer._client.receive_message.return_value = {
+                "Messages": [
+                    {"Body": "not-valid-json", "ReceiptHandle": "rh-bad"},
+                    {"Body": valid_body, "ReceiptHandle": "rh-good"},
+                ]
+            }
+            consumer.delete = AsyncMock()
+
+            gen = consumer.receive()
+            received_msg, rh = await gen.__anext__()
+            assert received_msg.source_id == "case-after-bad"
+            consumer.delete.assert_awaited_once_with("rh-bad")
+            await gen.aclose()
+
+    @pytest.mark.asyncio
+    async def test_receive_sleeps_when_empty_queue(self):
+        """Cover line 144-146: empty Messages list triggers sleep+continue."""
+
+        with patch("ingestion.queue.sqs.boto3"):
+            from ingestion.queue.sqs import SQSConsumer
+
+            consumer = SQSConsumer.__new__(SQSConsumer)
+            consumer._queue_url = "https://sqs.example.com/queue"
+            consumer._max_messages = 10
+            consumer._visibility_timeout = 300
+            consumer._wait_seconds = 20
+            consumer._client = MagicMock()
+
+            valid_body = IngestionMessage(
+                source_type="indiana_courts",
+                source_id="case-after-empty",
+                download_url="https://example.com/doc.pdf",
+                metadata={},
+            ).to_body()
+
+            call_count = 0
+
+            def _receive(**kwargs):
+                nonlocal call_count
+                call_count += 1
+                if call_count == 1:
+                    return {"Messages": []}  # empty first
+                return {"Messages": [{"Body": valid_body, "ReceiptHandle": "rh-e"}]}
+
+            consumer._client.receive_message.side_effect = _receive
+
+            with patch("asyncio.sleep", new=AsyncMock()):
+                gen = consumer.receive()
+                received_msg, rh = await gen.__anext__()
+
+            assert received_msg.source_id == "case-after-empty"
+            assert call_count == 2
+            await gen.aclose()
+
+    @pytest.mark.asyncio
+    async def test_delete_calls_delete_message(self):
+        """Cover lines 160-161: delete() uses run_in_executor with delete_message."""
+        with patch("ingestion.queue.sqs.boto3"):
+            from ingestion.queue.sqs import SQSConsumer
+
+            consumer = SQSConsumer.__new__(SQSConsumer)
+            consumer._queue_url = "https://sqs.example.com/queue"
+            consumer._client = MagicMock()
+
+            await consumer.delete("receipt-del-1")
+
+            consumer._client.delete_message.assert_called_once_with(
+                QueueUrl="https://sqs.example.com/queue",
+                ReceiptHandle="receipt-del-1",
+            )

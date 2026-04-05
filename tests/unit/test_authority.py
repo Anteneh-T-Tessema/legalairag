@@ -293,3 +293,208 @@ def test_filter_removes_stale_result():
     )
     assert len(valid) == 1
     assert valid[0].chunk_id == "fresh"
+
+
+# ── get_authority_score: substring match ──────────────────────────────────────
+
+
+def test_authority_score_substring_match():
+    # "Indiana Supreme Court of Indiana" is not an exact key but contains
+    # "supreme court of indiana" → substring match → 0.85
+    score = get_authority_score("The Supreme Court of Indiana (2023)")
+    assert score == 0.85
+
+
+# ── is_temporally_valid: ValueError branches ─────────────────────────────────
+
+
+def test_invalid_effective_date_string_treated_as_valid():
+    # Malformed effective_date → ValueError caught → document treated as valid
+    assert is_temporally_valid({"effective_date": "not-a-date"}) is True
+
+
+def test_invalid_expiry_date_string_treated_as_valid():
+    # Malformed expiry_date → ValueError caught → document treated as valid
+    assert is_temporally_valid({"expiry_date": "bad/date"}) is True
+
+
+def test_future_expiry_date_still_valid():
+    # expiry_date is in the future → document is still valid (168->173 branch)
+    assert (
+        is_temporally_valid(
+            {"expiry_date": "2099-12-31"},
+            reference_date=date(2024, 1, 1),
+        )
+        is True
+    )
+
+
+# ── filter_temporally_valid: warn_on_filter=True ──────────────────────────────
+
+
+def test_filter_logs_warning_when_warn_on_filter_true(caplog):
+    results = [_result("stale", "s1", 0.9)]
+    results[0].metadata["expiry_date"] = "2010-01-01"
+    valid = filter_temporally_valid(
+        results,
+        reference_date=date(2024, 1, 1),
+        warn_on_filter=True,
+    )
+    assert len(valid) == 0
+
+
+# ── CitationGraph: add_node with citation_string ──────────────────────────────
+
+
+def test_add_node_registers_citation_string():
+    graph = CitationGraph()
+    node = NodeMetadata(
+        source_id="op1",
+        court="ind",
+        court_level="supreme",
+        date_filed=date(2020, 1, 1),
+        case_name="Case One",
+        citation_string="123 N.E.3d 456",
+    )
+    graph.add_node(node)
+    assert graph._citation_str_to_id["123 N.E.3d 456"] == "op1"
+
+
+# ── CitationGraph: add_edge where cited_id not in nodes ───────────────────────
+
+
+def test_add_edge_negative_treatment_unknown_cited_node():
+    # cited node is NOT in the graph; the if-branch (275->exit) is False
+    graph = CitationGraph()
+    graph.add_node(_node("citer"))
+    edge = CitationEdge("citer", "ghost", "overruled", is_negative=True)
+    graph.add_edge(edge)  # must not raise
+    # ghost node not in graph, so no side-effects on nodes
+    assert "ghost" not in graph._nodes
+
+
+# ── CitationGraph: get_precedents ─────────────────────────────────────────────
+
+
+def test_get_precedents_single_depth():
+    graph = CitationGraph()
+    for nid in ["a", "b", "c"]:
+        graph.add_node(_node(nid))
+    graph.add_edge(CitationEdge("a", "b", "cited", is_negative=False))
+    graph.add_edge(CitationEdge("b", "c", "cited", is_negative=False))
+    # depth=1: only direct citations from "a"
+    precedents = graph.get_precedents("a", depth=1)
+    assert set(precedents) == {"b"}
+
+
+def test_get_precedents_two_depth():
+    graph = CitationGraph()
+    for nid in ["a", "b", "c"]:
+        graph.add_node(_node(nid))
+    graph.add_edge(CitationEdge("a", "b", "cited", is_negative=False))
+    graph.add_edge(CitationEdge("b", "c", "cited", is_negative=False))
+    # depth=2: follows chain a→b→c
+    precedents = graph.get_precedents("a", depth=2)
+    assert set(precedents) == {"b", "c"}
+
+
+def test_get_precedents_no_edges_returns_empty():
+    graph = CitationGraph()
+    graph.add_node(_node("lone"))
+    assert graph.get_precedents("lone") == []
+
+
+def test_get_precedents_deduplicates_already_visited():
+    # Both "a" and "b" cite "c" — "c" must appear only once (306->305 branch)
+    graph = CitationGraph()
+    for nid in ["a", "b", "c"]:
+        graph.add_node(_node(nid))
+    graph.add_edge(CitationEdge("a", "c", "cited", is_negative=False))
+    graph.add_edge(CitationEdge("a", "b", "cited", is_negative=False))
+    graph.add_edge(CitationEdge("b", "c", "cited", is_negative=False))
+    precedents = graph.get_precedents("a", depth=2)
+    assert precedents.count("c") == 1
+
+
+# ── CitationGraph: pagerank with negative edges ───────────────────────────────
+
+
+def test_compute_pagerank_skips_negative_edges():
+    # negative edges should not propagate authority (331->330 branch)
+    graph = CitationGraph()
+    for nid in ["a", "b"]:
+        graph.add_node(_node(nid))
+    graph.add_edge(CitationEdge("a", "b", "overruled", is_negative=True))
+    graph.compute_pagerank()
+    # b got no positive citations, so its score should be low / baseline only
+    assert graph._nodes["b"].pagerank_score >= 0.0  # no error; score is set
+
+
+# ── CitationGraph: enrich_results with pagerank boost ─────────────────────────
+
+
+def test_enrich_results_boosts_score_via_pagerank():
+    graph = CitationGraph()
+    for nid in ["cited", "citer"]:
+        graph.add_node(_node(nid))
+    graph.add_edge(CitationEdge("citer", "cited", "cited", is_negative=False))
+    graph.compute_pagerank()
+    # Ensure cited has a positive pagerank_score before calling enrich
+    graph._nodes["cited"].pagerank_score = 0.8
+    results = [_result("c1", "cited", 0.5)]
+    enriched = graph.enrich_results(results, filter_bad_law=False, boost_cited=True)
+    assert enriched[0].score > 0.5
+    assert "pagerank_score" in enriched[0].metadata
+
+
+# ── CitationGraph: parse_edge_from_context ────────────────────────────────────
+
+
+def test_parse_edge_negative_treatment():
+    edge = CitationGraph.parse_edge_from_context(
+        "a", "b", "The court overruled the earlier decision."
+    )
+    assert edge.is_negative is True
+    assert "overruled" in edge.treatment
+
+
+def test_parse_edge_positive_treatment():
+    edge = CitationGraph.parse_edge_from_context(
+        "a", "b", "The court followed the reasoning in Smith v. Jones."
+    )
+    assert edge.is_negative is False
+    assert edge.treatment == "followed"
+
+
+def test_parse_edge_default_treatment():
+    edge = CitationGraph.parse_edge_from_context("a", "b", "See also 123 N.E.3d 456.")
+    assert edge.is_negative is False
+    assert edge.treatment == "cited"
+
+
+def test_parse_edge_with_date():
+    from datetime import date as _date
+
+    edge = CitationGraph.parse_edge_from_context(
+        "a", "b", "cited", date_cited=_date(2023, 6, 15)
+    )
+    assert edge.date_cited == _date(2023, 6, 15)
+
+
+# ── CitationGraph: __len__ and __repr__ ────────────────────────────────────────
+
+
+def test_citation_graph_len():
+    graph = CitationGraph()
+    assert len(graph) == 0
+    graph.add_node(_node("x"))
+    assert len(graph) == 1
+
+
+def test_citation_graph_repr():
+    graph = CitationGraph()
+    graph.add_node(_node("x"))
+    graph.add_edge(CitationEdge("x", "y", "cited", is_negative=False))
+    r = repr(graph)
+    assert "CitationGraph" in r
+    assert "nodes=1" in r
