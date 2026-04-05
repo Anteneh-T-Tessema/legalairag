@@ -24,6 +24,10 @@
    - [Re-ranking](#44-re-ranking)
    - [Answer Generation](#45-answer-generation)
    - [Agent Orchestration](#46-agent-orchestration)
+   - [Fraud Detection Agent](#47-fraud-detection-agent)
+   - [Authority Ranker & Citation Graph](#48-authority-ranker--citation-graph)
+   - [Public Legal Data Sources](#49-public-legal-data-sources)
+   - [Evaluation Framework](#410-evaluation-framework)
 5. [Authentication & Security](#5-authentication--security)
 6. [Database Schema](#6-database-schema)
 7. [API Reference](#7-api-reference)
@@ -38,6 +42,7 @@
 16. [Troubleshooting](#16-troubleshooting)
 17. [Contributing](#17-contributing)
 18. [License](#18-license)
+19. [Changelog](#19-changelog)
 
 ---
 
@@ -531,6 +536,264 @@ Summarizes individual case documents using a structured extraction prompt:
 
 ---
 
+### 4.7 Fraud Detection Agent
+
+The `FraudDetectionAgent` scans Indiana legal filings for patterns that suggest fraudulent activity — identity theft in court records, serial deed fraud, and suspicious filing patterns. It is strictly a detection and flagging system: no automated enforcement actions are taken.
+
+#### Architecture
+
+The agent extends `BaseAgent` and follows a 6-step pipeline:
+
+```text
+Step 1 — Parse + Embed Query
+  Input:  "quitclaim deed Marion County last 90 days"
+  Output: ParsedQuery + 1024-dim query vector
+
+Step 2 — Retrieve Filings (wide net)
+  top_k = 50 (intentionally wider than normal 5-10 for pattern analysis)
+
+Step 3 — Pattern Analysis (_FilingPatternAnalyzer)
+  Run all 5 detectors in sequence over the retrieved set
+
+Step 4 — Risk Scoring
+  Aggregate indicator severities → overall risk level
+
+Step 5 — Investigation Summary
+  LLM-generated memo (Bedrock Claude) describing findings
+
+Step 6 — Persist Audit Trail
+  AgentRun record with run_id → all indicators + evidence
+```
+
+#### Five Pattern Detectors
+
+| Detector | What It Flags | Threshold | Severity |
+|---|---|---|---|
+| **Burst Filing** | Same party files >5 cases within 30 days | ≥6 filings/30-day window | Medium (6-9) / High (10+) |
+| **Identity Reuse** | Same SSN fragment, DOB, or address across unrelated cases | SSN in >2 cases, DOB in >3 cases | High (SSN) / Medium (DOB) |
+| **Deed Fraud** | Quitclaim deeds with nominal consideration ($1-$100) | ≥3 matching cases | High |
+| **Suspicious Entities** | Numerically-named entities (e.g. "Entity 42 LLC") | ≥2 cases | Medium |
+| **Rapid Ownership Transfer** | Property changes hands 3+ times within 90 days | ≥3 transfers in 90 days | High |
+
+#### Fraud Indicator Structure
+
+Each detected anomaly is captured as a `FraudIndicator`:
+
+```python
+FraudIndicator(
+    indicator_type="burst_filing",
+    severity="high",           # "low" | "medium" | "high" | "critical"
+    description="Party 'john doe' filed 12 cases in 30 days...",
+    evidence=["case-001", "case-002", ...],  # source IDs
+    confidence=0.85,           # 0.0–1.0
+    metadata={"party": "john doe", "window_start": "2024-01-15"},
+)
+```
+
+#### Risk Scoring
+
+The overall risk level is computed from individual indicator severities:
+- **Critical**: any indicator with `severity="critical"` or ≥3 high-severity indicators
+- **High**: any high-severity indicator
+- **Medium**: any medium-severity indicator
+- **Low**: only low-severity indicators
+- **None**: no indicators detected
+
+Results with `risk_level ∈ {medium, high, critical}` automatically set `requires_human_review=True`.
+
+#### API Endpoint
+
+```text
+POST /api/v1/fraud/analyze
+Authorization: Bearer <token>
+
+Request:  { "query": "quitclaim deed Marion County" }
+Response: {
+  "run_id": "a1b2c3d4-...",
+  "risk_level": "high",
+  "requires_human_review": true,
+  "total_filings_analyzed": 47,
+  "indicators": [ ... ],
+  "flagged_source_ids": ["case-001", "case-005"],
+  "summary": "Investigation found 3 quitclaim deeds..."
+}
+```
+
+---
+
+### 4.8 Authority Ranker & Citation Graph
+
+#### AuthorityRanker
+
+The `AuthorityRanker` re-scores retrieval results by blending the retrieval score with the authoritativeness of the issuing court under Indiana law. A lower retrieval score from the Indiana Supreme Court should often outrank a higher score from a trial court for binding precedent questions.
+
+**Indiana Court Hierarchy Weights:**
+
+| Court | Weight | Rationale |
+|---|---|---|
+| US Supreme Court | 1.00 | Binding on federal constitutional questions |
+| 7th Circuit Court of Appeals | 0.90 | Binding federal circuit for Indiana |
+| Indiana Supreme Court | 0.85 | Highest Indiana state authority |
+| Indiana Court of Appeals | 0.70 | Binding unless overruled by Ind. Supreme Court |
+| Indiana Tax Court | 0.60 | Specialized — tax matters only |
+| Federal District Courts (S.D./N.D. Ind.) | 0.55 | Persuasive on state questions |
+| Indiana Trial/Circuit Courts | 0.40 | Persuasive only |
+
+**Blending Formula:**
+
+$$\text{final\_score} = (1 - \alpha) \times \text{retrieval\_score} + \alpha \times \text{authority\_score}$$
+
+Default $\alpha = 0.30$ — authority contributes 30% of the final score. Configurable per query type (citation-lookup queries use lower alpha).
+
+#### Temporal Validity Filtering
+
+Results can be filtered for temporal validity:
+- **Statutes**: must have `effective_date ≤ reference_date` and no expired `expiry_date`
+- **Case law**: generally valid unless overruled (see citation graph below)
+
+Stale documents are filtered with a warning log so administrators can investigate.
+
+#### CitationGraph
+
+The `CitationGraph` builds an in-memory directed graph of legal citation relationships:
+
+```text
+Nodes:  legal opinions / statutes (identified by source_id)
+Edges:  citation relationships with treatment labels (citing → cited)
+```
+
+**Capabilities:**
+
+| Feature | Description |
+|---|---|
+| **Good-law check** | Detects overruled/reversed opinions via negative treatment edges |
+| **PageRank authority** | Iterative authority propagation (damping=0.85, 30 iterations); widely-cited opinions get higher scores |
+| **Precedent chains** | BFS traversal to depth N — find all precedents for a given opinion |
+| **Result enrichment** | Filters bad-law results and boosts highly-cited opinions with a configurable `pagerank_alpha` |
+
+**Treatment Classification:**
+
+- **Negative** (marks opinion as not good law): `overruled`, `reversed`, `disapproved`, `abrogated`, `criticized`, `distinguished`
+- **Positive** (passes authority in PageRank): `affirmed`, `followed`, `cited`, `relied on`, `approved`
+
+---
+
+### 4.9 Public Legal Data Sources
+
+IndyLeg can ingest from three public legal data sources in addition to the Indiana courts portal:
+
+#### CourtListener Client
+
+Async client for the [CourtListener REST API v4](https://www.courtlistener.com/api/rest-info/) (Free Law Project):
+
+| Feature | Detail |
+|---|---|
+| **Courts** | Indiana Supreme Court, Court of Appeals, Tax Court, 7th Circuit |
+| **Pagination** | Auto-paginated with configurable `max_pages` safety cap |
+| **Rate limiting** | Exponential backoff on HTTP 429; configurable concurrency semaphore (default 3) |
+| **Authentication** | Optional API token for higher rate limits |
+| **Output** | `PublicLegalOpinion` dataclass with normalized metadata |
+
+```python
+async with CourtListenerClient() as cl:
+    opinions = await cl.fetch_indiana_opinions(
+        date_from=date(2024, 1, 1),
+        include_federal=True,
+    )
+```
+
+#### Law.Resource.Org Client
+
+Downloads Federal Reporter HTML opinions from [law.resource.org](https://law.resource.org/pub/us/case/reporter/):
+
+- Targets 7th Circuit opinions (F.2d, F.3d series)
+- Filters for Indiana relevance by scanning for Indiana-specific terms
+- Parses Apache-style directory listings for volume/file discovery
+- All content is public domain government documents
+
+#### IndianaCodeClient
+
+Fetches Indiana Code sections directly from the [Indiana General Assembly API](https://iga.in.gov):
+
+```python
+async with IndianaCodeClient() as iga:
+    # Fetch all sections under Title 35 (Criminal Law)
+    statutes = await iga.fetch_title(35)
+
+    # Fetch a single section
+    section = await iga.fetch_section(title=32, article=31, chapter=1, section=6)
+```
+
+Each statute is returned as an `IndianaStatute` dataclass with `full_citation`, `section_text`, `effective_date`, and a canonical URL.
+
+---
+
+### 4.10 Evaluation Framework
+
+The `RAGEvaluator` provides offline evaluation of the full RAG pipeline using standard IR and generation quality metrics.
+
+#### Retrieval Metrics
+
+| Metric | Formula | What It Measures |
+|---|---|---|
+| **Recall@K** | $\frac{\lvert \text{retrieved}_K \cap \text{relevant} \rvert}{\lvert \text{relevant} \rvert}$ | Fraction of relevant docs found in top-K |
+| **Precision@K** | $\frac{\lvert \text{retrieved}_K \cap \text{relevant} \rvert}{K}$ | Fraction of top-K that are relevant |
+| **MRR** | $\frac{1}{\text{rank of first relevant doc}}$ | Position of first relevant result |
+| **NDCG@K** | $\frac{DCG@K}{IDCG@K}$ | Graded relevance with position discounting |
+
+#### Generation Metrics
+
+| Metric | What It Measures |
+|---|---|
+| **Citation Accuracy** | Fraction of `[SOURCE: id]` references that map to actually-retrieved chunks |
+| **Faithfulness** | Fraction of legal claims in the answer that are grounded in retrieved context |
+
+#### Evaluation Dataset Format
+
+```json
+{
+  "name": "Indiana Eviction Law Eval",
+  "examples": [
+    {
+      "query_id": "eviction-001",
+      "query": "What notice is required before eviction in Indiana?",
+      "relevant_source_ids": ["ic-32-31-1-6-chunk-001", "case-49D01-chunk-003"],
+      "graded_relevance": { "ic-32-31-1-6-chunk-001": 3, "case-49D01-chunk-003": 2 },
+      "expected_citations": ["IC 32-31-1-6"],
+      "jurisdiction": "Indiana"
+    }
+  ]
+}
+```
+
+#### Running Evaluation
+
+```python
+from retrieval.evaluator import RAGEvaluator, EvalDataset
+
+dataset = EvalDataset.from_json("tests/data/eval_queries.json")
+evaluator = RAGEvaluator(embedder, searcher, reranker, generator)
+report = await evaluator.evaluate(dataset, k_values=[1, 5, 10])
+report.print_summary()
+```
+
+Output:
+```text
+============================================================
+EVALUATION REPORT — Indiana Eviction Law Eval
+============================================================
+Examples evaluated : 15
+MRR                : 0.8200
+Recall@1           : 0.6000  Precision@1  : 0.6000  NDCG@1  : 0.5800
+Recall@5           : 0.8500  Precision@5  : 0.3400  NDCG@5  : 0.7200
+Recall@10          : 0.9200  Precision@10 : 0.1840  NDCG@10 : 0.7800
+Citation Accuracy  : 0.9400
+Faithfulness       : 0.8700
+============================================================
+```
+
+---
+
 ## 5. Authentication & Security
 
 ### JWT Token Architecture
@@ -625,6 +888,43 @@ CREATE INDEX ON legal_chunks USING gin (metadata);
 ```
 
 **Why HNSW over IVFFlat?** HNSW (Hierarchical Navigable Small World) provides better recall at high query-per-second loads without requiring a training step. IVFFlat requires pre-computing cluster centroids (`VACUUM ANALYZE`) whenever the dataset changes significantly. For a legal corpus that grows continuously, HNSW is operationally simpler.
+
+### `document_versions` Table
+
+```sql
+CREATE TABLE document_versions (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    source_id       TEXT NOT NULL,
+    content_hash    TEXT NOT NULL,         -- SHA-256 of document text (dedup key)
+    version         INTEGER NOT NULL DEFAULT 1,
+    ingested_at     TIMESTAMPTZ DEFAULT NOW(),
+    metadata        JSONB NOT NULL,
+    UNIQUE(source_id, content_hash)       -- prevents duplicate ingestion
+);
+```
+
+The ingestion worker calls `record_version()` before processing a document. If the `(source_id, content_hash)` pair already exists, the document is skipped — preventing duplicate embeddings when the same document is re-discovered via multiple ingestion paths.
+
+### `citation_edges` Table
+
+```sql
+CREATE TABLE citation_edges (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    citing_id       TEXT NOT NULL,
+    cited_id        TEXT NOT NULL,
+    treatment       TEXT NOT NULL,         -- 'cited', 'followed', 'overruled', etc.
+    is_negative     BOOLEAN DEFAULT FALSE,
+    date_cited      DATE,
+    context_snippet TEXT,
+    created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX ON citation_edges (citing_id);
+CREATE INDEX ON citation_edges (cited_id);
+CREATE INDEX ON citation_edges (treatment);
+```
+
+This table persists the `CitationGraph` edges for production use. The in-memory graph is loaded from this table on startup and updated as new opinions are ingested.
 
 ### OpenSearch Index (`indyleg-legal-docs`)
 
@@ -810,6 +1110,43 @@ Runs the full 5-step CaseResearchAgent pipeline: retrieval → re-ranking → ge
 
 ---
 
+### Fraud Detection
+
+#### `POST /fraud/analyze` — Fraud Pattern Analysis
+
+Runs the `FraudDetectionAgent` over filings matching the query. Returns risk assessment and flagged indicators. All results are advisory only — no automated actions are taken.
+
+**Request:**
+```json
+{
+  "query": "quitclaim deed Marion County 2024"
+}
+```
+
+**Response `200 OK`:**
+```json
+{
+  "run_id": "d4e5f6a7-b8c9-0123-4567-89abcdef0123",
+  "query_context": "quitclaim deed Marion County 2024",
+  "risk_level": "high",
+  "requires_human_review": true,
+  "total_filings_analyzed": 47,
+  "flagged_source_ids": ["case-49D01-2024-PL-000123", "case-49D01-2024-PL-000456"],
+  "summary": "Investigation found 3 quitclaim deeds with nominal consideration ($1-$100)...",
+  "indicators": [
+    {
+      "indicator_type": "deed_fraud_pattern",
+      "severity": "high",
+      "description": "Found 3 quitclaim deeds with nominal consideration ($1-$100).",
+      "evidence": ["case-49D01-2024-PL-000123", "case-49D01-2024-PL-000456", "case-49D01-2024-PL-000789"],
+      "confidence": 0.80
+    }
+  ]
+}
+```
+
+---
+
 ### Health
 
 #### `GET /health`
@@ -857,6 +1194,8 @@ All configuration is via environment variables, loaded by Pydantic `BaseSettings
 | `RERANK_TOP_K` | `20` | No | Candidates fed to cross-encoder |
 | `RETRIEVAL_TOP_K` | `5` | No | Final chunks returned to LLM |
 | `LOG_LEVEL` | `INFO` | No | Structured log level |
+| `COURTLISTENER_API_TOKEN` | — | No | CourtListener API token (higher rate limits) |
+| `AUTHORITY_ALPHA` | `0.30` | No | Authority score blending weight (0.0–1.0) |
 
 Generate a secure `API_SECRET_KEY`:
 
@@ -876,72 +1215,103 @@ indyleg/
 │       └── ci.yml                  # GitHub Actions: backend tests, tsc+build, docker smoke
 ├── config/
 │   ├── settings.py                 # Pydantic BaseSettings — single config source of truth
-│   └── logging_config.py          # structlog JSON logging setup
+│   └── logging.py                  # structlog JSON logging setup
 ├── ingestion/
+│   ├── __main__.py                 # python -m ingestion entry point
 │   ├── cli.py                      # Click CLI: recent / search / case subcommands
 │   ├── sources/
 │   │   ├── indiana_courts.py       # Async Indiana Odyssey/Tyler portal client
-│   │   └── document_parser.py     # PDF/DOCX/HTML/TXT → plain text
+│   │   ├── public_resource.py      # CourtListener, law.resource.org, IGA clients
+│   │   └── document_loader.py      # PDF/DOCX/HTML/TXT → plain text
 │   ├── pipeline/
 │   │   ├── chunker.py              # Legal-aware sliding window chunker
 │   │   ├── embedder.py             # Bedrock Titan Embed v2, batch + semaphore
-│   │   └── worker.py              # SQS-driven async orchestrator
+│   │   └── worker.py               # SQS-driven async orchestrator + dedup
 │   └── queue/
 │       └── sqs.py                  # SQS producer/consumer, long-poll, batch
 ├── retrieval/
 │   ├── hybrid_search.py            # pgvector + BM25 + RRF fusion
 │   ├── reranker.py                 # Cross-encoder ms-marco-MiniLM-L-6-v2
-│   └── query_parser.py            # Jurisdiction / case_type / citation extraction
+│   ├── query_parser.py             # Jurisdiction / case_type / citation extraction
+│   ├── authority.py                # AuthorityRanker (court hierarchy) + CitationGraph
+│   ├── evaluator.py                # Offline evaluation: Recall, Precision, MRR, NDCG
+│   └── indexer.py                  # Document versioning + citation edge persistence
 ├── generation/
 │   ├── bedrock_client.py           # Bedrock Converse API wrapper
-│   └── validator.py               # Citation validator + hallucination guard
+│   ├── generator.py                # Prompt assembly + generation orchestration
+│   ├── validator.py                # Citation validator + hallucination guard
+│   └── prompts/
+│       └── legal_qa.py             # System prompts for legal Q&A generation
 ├── agents/
-│   ├── research_agent.py           # 5-step CaseResearchAgent + audit trail
-│   └── summarization_agent.py     # Structured document summarization
+│   ├── base_agent.py               # BaseAgent ABC — audit trail, tool access control
+│   ├── research_agent.py           # 5-step CaseResearchAgent + authority reranking
+│   ├── summarization_agent.py      # Structured document summarization
+│   └── fraud_detection_agent.py    # Fraud pattern detection (5 detectors + risk scoring)
 ├── api/
 │   ├── auth.py                     # JWT creation, HMAC-SHA256 password hashing
 │   ├── main.py                     # FastAPI app, CORS, AuditLogMiddleware
-│   ├── schemas.py                  # Pydantic request/response models
+│   ├── middleware/
+│   │   └── audit_log.py            # Request/response audit logging middleware
+│   ├── schemas/
+│   │   ├── documents.py            # Document upload/download schemas
+│   │   ├── fraud.py                # FraudAnalysisRequest/Response schemas
+│   │   └── search.py               # Search request/response schemas
 │   └── routers/
+│       ├── auth_router.py          # POST /auth/token  POST /auth/refresh  GET /auth/me
 │       ├── search.py               # POST /search  POST /search/ask
-│       └── auth_router.py         # POST /auth/token  POST /auth/refresh  GET /auth/me
+│       ├── documents.py            # Document management endpoints
+│       └── fraud.py                # POST /fraud/analyze
 ├── ui/                             # React + TypeScript + Vite frontend
 │   ├── src/
 │   │   ├── App.tsx                 # Tab navigation, auth gate, logout
-│   │   ├── index.css              # Full responsive stylesheet (CSS variables)
+│   │   ├── main.tsx                # React DOM entry point
+│   │   ├── index.css               # Full responsive stylesheet (CSS variables)
+│   │   ├── api/
+│   │   │   └── client.ts           # Typed API client (fetch wrapper)
 │   │   └── components/
-│   │       ├── ChatInterface.tsx
-│   │       ├── SearchResults.tsx
-│   │       ├── DocumentUpload.tsx
-│   │       └── LoginForm.tsx
-│   ├── tsconfig.json              # strict, jsx:react-jsx, moduleResolution:bundler
-│   └── vite.config.ts             # proxy /api → localhost:8000, port 3000
+│   │       ├── ChatInterface.tsx    # RAG chat interface
+│   │       ├── SearchBar.tsx        # Search input with filters
+│   │       ├── SearchResults.tsx    # Result list with source links
+│   │       ├── ResultCard.tsx       # Individual result card
+│   │       ├── DocumentUpload.tsx   # Document upload form
+│   │       └── LoginForm.tsx        # JWT authentication form
+│   ├── tsconfig.json               # strict, jsx:react-jsx, moduleResolution:bundler
+│   └── vite.config.ts              # proxy /api → localhost:8000, port 3000
 ├── infrastructure/
 │   ├── cdk/
 │   │   ├── app.py                  # CDK app entry point
 │   │   └── stacks/
 │   │       ├── ingestion_stack.py  # S3 + SQS + worker Lambda/ECS
-│   │       └── api_stack.py       # ECS Fargate + ALB, Aurora pgvector, OpenSearch
+│   │       ├── retrieval_stack.py  # Aurora pgvector + OpenSearch
+│   │       └── api_stack.py       # ECS Fargate + ALB, IAM roles
 │   ├── docker/
-│   │   ├── Dockerfile             # Multi-stage production image
-│   │   └── init.sql               # PostgreSQL schema + pgvector extensions
-│   └── deploy.sh                  # cdk bootstrap + cdk deploy --all
+│   │   ├── Dockerfile              # Multi-stage production image
+│   │   ├── Dockerfile.api          # API-specific image
+│   │   ├── Dockerfile.worker       # Worker-specific image
+│   │   ├── init.sql                # PostgreSQL schema + pgvector + citation_edges
+│   │   └── localstack-init.sh      # LocalStack S3/SQS bootstrap
+│   └── deploy.sh                   # cdk bootstrap + cdk deploy --all
 ├── tests/
+│   ├── data/
+│   │   └── eval_queries.json       # Evaluation dataset (ground-truth queries)
 │   ├── unit/
-│   │   ├── test_chunker.py
-│   │   ├── test_embedder.py
-│   │   ├── test_hybrid_search.py
-│   │   ├── test_reranker.py
-│   │   ├── test_query_parser.py
-│   │   ├── test_validator.py
-│   │   ├── test_research_agent.py
-│   │   ├── test_summarization_agent.py
-│   │   └── test_auth.py
-│   └── integration/
-│       ├── test_sqs.py             # End-to-end SQS produce/consume
-│       └── test_bedrock.py        # Live Bedrock embedding + generation
+│   │   ├── test_chunker.py         # Section detection, overlap, IC § extraction
+│   │   ├── test_hybrid_search.py   # RRF formula, zero-score handling
+│   │   ├── test_generator.py       # Prompt assembly, citation injection
+│   │   ├── test_authority.py       # Court hierarchy weights, alpha blending
+│   │   ├── test_evaluator.py       # IR metrics: recall, precision, MRR, NDCG
+│   │   ├── test_fraud_detection.py # All 5 pattern detectors, risk scoring
+│   │   └── test_worker.py          # Dedup, SQS message processing
+│   ├── integration/
+│   │   ├── test_sqs.py             # End-to-end SQS produce/consume (moto)
+│   │   ├── test_bedrock.py         # Live Bedrock embedding + generation
+│   │   └── test_pgvector.py        # pgvector insert/search round-trip
+│   └── e2e/
+│       └── test_rag_pipeline.py    # Full pipeline: parse → embed → search → rerank → generate
+├── pyrightconfig.json              # Pyright/Pylance type checker config
+├── pyproject.toml                  # Dependencies, ruff, mypy, pytest config
 ├── docker-compose.yml              # Local dev: postgres, opensearch, localstack
-└── requirements.txt               # Python dependencies
+└── README.md                       # This file
 ```
 
 ---
@@ -1056,19 +1426,40 @@ python -m ingestion.cli recent --county "Marion County" --days 7
 pytest tests/unit/ -v
 ```
 
-All 19 unit tests cover: chunker (section detection, overlap), embedder (batching, semaphore), hybrid search (RRF formula), reranker (score ordering), query parser (citation extraction, jurisdiction), citation validator (hallucination detection), research agent (pipeline steps), summarization agent (structured output), and auth (JWT creation, role verification).
+**141 tests** across 7 test files covering all subsystems:
+
+| Test File | Coverage |
+|---|---|
+| `test_chunker.py` | Section boundary detection, sliding window overlap, IC § citation extraction, empty input handling |
+| `test_hybrid_search.py` | RRF fusion formula, zero-score handling, score ordering, empty result sets |
+| `test_generator.py` | Prompt assembly, citation injection, context formatting, Bedrock API mocking |
+| `test_authority.py` | Court hierarchy weight lookup, alpha blending, substring matching, temporal validity filtering |
+| `test_evaluator.py` | Recall@K, Precision@K, MRR, NDCG, citation accuracy, faithfulness scoring, edge cases |
+| `test_fraud_detection.py` | All 5 pattern detectors (burst filing, identity reuse, deed fraud, suspicious entities, rapid ownership), risk level computation, empty-set handling |
+| `test_worker.py` | Document dedup via content hash, SQS message processing, error handling |
 
 ### Integration Tests
 
-Integration tests require live AWS credentials and running local services (Docker Compose).
+Integration tests require local services (Docker Compose) or live AWS credentials.
 
 ```bash
-# Requires LocalStack for SQS
+# SQS produce/consume with moto (no AWS needed)
 pytest tests/integration/test_sqs.py -v
 
-# Requires real AWS Bedrock access
+# pgvector insert + cosine search round-trip (requires PostgreSQL)
+pytest tests/integration/test_pgvector.py -v
+
+# Live Bedrock embedding + generation (requires AWS credentials)
 pytest tests/integration/test_bedrock.py -v
 ```
+
+### End-to-End Tests
+
+```bash
+pytest tests/e2e/ -v
+```
+
+The `test_rag_pipeline.py` tests the full pipeline: query parsing → embedding → hybrid search → authority reranking → generation → citation validation.
 
 ### Full Test Suite with Coverage
 
@@ -1080,8 +1471,9 @@ open htmlcov/index.html
 ### Linting and Type Checking
 
 ```bash
-ruff check .                # fast Python linter
-mypy . --ignore-missing-imports   # static type checking
+ruff check .                          # Fast Python linter (ruff 0.15+)
+ruff format --check .                 # Format verification
+pyright                               # Static type checking (uses pyrightconfig.json)
 ```
 
 Frontend type checking:
@@ -1400,6 +1792,48 @@ The CI pipeline will run automatically on your PR branch.
 ## 18. License
 
 MIT License. See [LICENSE](LICENSE) for full text.
+
+---
+
+## 19. Changelog
+
+### v0.4.0 — Error Resolution & Code Quality
+
+- **0 Pyright errors, 0 ruff lint errors** — full static analysis clean
+- Fixed `AuthorityRanker.rank()` → `.rerank()` method name bug in `research_agent.py` and e2e tests
+- Added `pyrightconfig.json` for Pyright/Pylance with venv discovery and basic type checking
+- Configured `.vscode/settings.json` for IDE Python analysis
+- Python 3.9 compatibility: reverted ruff auto-upgrades (`datetime.UTC` → `timezone.utc`)
+- Applied `ruff format` across 39 files for consistent code style
+- Fixed `raise ... from err` patterns in exception handlers (B904)
+- Fixed lambda variable binding issues in SQS consumer (B023)
+- Updated ruff config: added ignore rules for B008, S608, UP017 and per-file test ignores
+
+### v0.3.0 — Comprehensive Test Suite
+
+- **141 tests** across unit, integration, and e2e test files — all passing
+- New test files: `test_authority.py`, `test_evaluator.py`, `test_fraud_detection.py`, `test_generator.py`, `test_worker.py`, `test_rag_pipeline.py`
+- Fixed 12 lint issues in `public_resource.py`
+
+### v0.2.0 — Feature Additions
+
+- **Fraud Detection Agent** — 5 pattern detectors with risk scoring and investigation memo generation
+- **Authority Ranker** — Indiana court hierarchy scoring with alpha blending
+- **Citation Graph** — directed graph with PageRank, good-law validation, precedent chains
+- **Public Legal Data Sources** — CourtListener, law.resource.org, Indiana General Assembly API clients
+- **Evaluation Framework** — Recall@K, Precision@K, MRR, NDCG, citation accuracy, faithfulness
+- **Document Versioning** — content-hash dedup in ingestion worker
+- **Fraud API endpoint** — `POST /fraud/analyze`
+- **Base Agent framework** — audit trail, tool access control, run_id tracing
+
+### v0.1.0 — Initial Release
+
+- Core RAG pipeline: ingestion → chunking → embedding → hybrid search → re-ranking → generation
+- Indiana courts portal integration (Odyssey/Tyler API)
+- JWT authentication with role-based access (Admin/Attorney/Clerk/Viewer)
+- React + TypeScript frontend with search, chat, and document upload
+- AWS CDK infrastructure (ECS Fargate, Aurora pgvector, OpenSearch, SQS)
+- Citation validator with hallucination guard
 
 ---
 
