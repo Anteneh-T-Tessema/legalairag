@@ -1,0 +1,51 @@
+version: 2
+updates:
+  # Python (pip) — pyproject.toml + requirements.lock
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "Anteneh-T-Tessema"
+    labels:
+      - "dependencies"
+      - "security"
+    commit-message:
+      prefix: "chore(deps):"
+    groups:
+      aws:
+        patterns: ["boto3", "botocore", "aioboto3"]
+      observability:
+        patterns: ["opentelemetry-*", "structlog"]
+      testing:
+        patterns: ["pytest*", "moto", "ruff", "mypy"]
+
+  # npm — ui/package.json
+  - package-ecosystem: "npm"
+    directory: "/ui"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "Anteneh-T-Tessema"
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "chore(deps):"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "chore(ci):"
