@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from api.auth import Role, create_access_token
+from api.auth import Role, create_access_token, create_refresh_token, revoke_token
 from api.main import app
 
 client = TestClient(app, raise_server_exceptions=False)
@@ -75,6 +75,73 @@ class TestRefresh:
     def test_refresh_invalid_token(self):
         resp = client.post("/api/v1/auth/refresh", json={"refresh_token": "garbage"})
         assert resp.status_code == 401
+
+    def test_refresh_rotates_token(self):
+        """Using a refresh token should revoke it — second use must fail."""
+        login_resp = client.post(
+            "/api/v1/auth/token", json={"username": "admin", "password": "admin123"}
+        )
+        refresh_token = login_resp.json()["refresh_token"]
+
+        # First use should succeed
+        resp1 = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+        assert resp1.status_code == 200
+
+        # Second use of the same refresh token should fail (revoked)
+        resp2 = client.post("/api/v1/auth/refresh", json={"refresh_token": refresh_token})
+        assert resp2.status_code == 401
+        assert "revoked" in resp2.json()["detail"].lower()
+
+
+# ── Revocation ───────────────────────────────────────────────────────────────
+
+
+class TestRevocation:
+    def test_revoke_refresh_token(self):
+        """POST /auth/revoke should invalidate a refresh token."""
+        login_resp = client.post(
+            "/api/v1/auth/token", json={"username": "admin", "password": "admin123"}
+        )
+        tokens = login_resp.json()
+        headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+
+        resp = client.post(
+            "/api/v1/auth/revoke",
+            json={"refresh_token": tokens["refresh_token"]},
+            headers=headers,
+        )
+        assert resp.status_code == 204
+
+        # The revoked refresh token should no longer work
+        resp2 = client.post(
+            "/api/v1/auth/refresh", json={"refresh_token": tokens["refresh_token"]}
+        )
+        assert resp2.status_code == 401
+
+    def test_revoke_requires_auth(self):
+        token = create_refresh_token("admin")
+        resp = client.post("/api/v1/auth/revoke", json={"refresh_token": token})
+        assert resp.status_code == 401
+
+    def test_revoke_cannot_revoke_other_users_token(self):
+        """Users cannot revoke tokens belonging to a different user."""
+        admin_login = client.post(
+            "/api/v1/auth/token", json={"username": "admin", "password": "admin123"}
+        )
+        admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
+
+        attorney_login = client.post(
+            "/api/v1/auth/token", json={"username": "attorney", "password": "attorney123"}
+        )
+        attorney_refresh = attorney_login.json()["refresh_token"]
+
+        # Admin tries to revoke attorney's token
+        resp = client.post(
+            "/api/v1/auth/revoke",
+            json={"refresh_token": attorney_refresh},
+            headers=admin_headers,
+        )
+        assert resp.status_code == 403
 
 
 # ── /me ──────────────────────────────────────────────────────────────────────

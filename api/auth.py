@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 import secrets
+import threading
 from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 
@@ -24,6 +26,8 @@ from pydantic import BaseModel
 
 from config.settings import settings
 
+logger = logging.getLogger(__name__)
+
 # ── Constants ────────────────────────────────────────────────────────────────
 
 _SECRET = settings.api_secret_key.get_secret_value()
@@ -32,6 +36,65 @@ _ACCESS_TOKEN_EXPIRE_MINUTES = 60
 _REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 _security = HTTPBearer()
+
+
+# ── Roles ────────────────────────────────────────────────────────────────────
+
+
+class Role(StrEnum):
+    ADMIN = "admin"
+    ATTORNEY = "attorney"
+    CLERK = "clerk"
+    VIEWER = "viewer"
+
+
+# ── Token blacklist (revocation) ─────────────────────────────────────────────
+
+_blacklist_lock = threading.Lock()
+_blacklist: set[str] = set()  # jti values of revoked tokens
+
+
+def _get_revocation_redis():
+    """Return a Redis client for token revocation, or None."""
+    redis_url = getattr(settings, "redis_url", "")
+    if not redis_url:
+        return None
+    try:
+        import redis as _redis_lib  # type: ignore[import-untyped]
+
+        r = _redis_lib.Redis.from_url(redis_url, decode_responses=True, socket_connect_timeout=2)
+        r.ping()
+        return r
+    except Exception:
+        return None
+
+
+def revoke_token(jti: str, expires_at: datetime) -> None:
+    """Revoke a token by its JTI.  Uses Redis if available, else in-memory."""
+    ttl = int((expires_at - datetime.now(timezone.utc)).total_seconds())
+    if ttl <= 0:
+        return  # already expired, nothing to revoke
+    r = _get_revocation_redis()
+    if r is not None:
+        try:
+            r.setex(f"revoked:{jti}", ttl, "1")
+            return
+        except Exception:
+            logger.warning("Redis revocation failed, using in-memory fallback")
+    with _blacklist_lock:
+        _blacklist.add(jti)
+
+
+def is_token_revoked(jti: str) -> bool:
+    """Check whether a JTI has been revoked."""
+    r = _get_revocation_redis()
+    if r is not None:
+        try:
+            return r.exists(f"revoked:{jti}") > 0
+        except Exception:
+            pass
+    with _blacklist_lock:
+        return jti in _blacklist
 
 
 # ── Roles ────────────────────────────────────────────────────────────────────
@@ -129,13 +192,19 @@ def decode_token(token: str) -> TokenPayload:
     try:
         data = jwt.decode(token, _SECRET, algorithms=[_ALGORITHM])
         role_raw = data.get("role")
-        return TokenPayload(
+        payload = TokenPayload(
             sub=data["sub"],
             role=Role(role_raw) if role_raw else None,
             exp=datetime.fromtimestamp(data["exp"], tz=timezone.utc),
             iat=datetime.fromtimestamp(data["iat"], tz=timezone.utc),
             jti=data["jti"],
         )
+        if is_token_revoked(payload.jti):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+            )
+        return payload
     except jwt.ExpiredSignatureError as err:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

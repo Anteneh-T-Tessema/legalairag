@@ -23,6 +23,7 @@ class Settings(BaseSettings):
 
     # ── Rate Limiting ────────────────────────────────────────────────────────
     rate_limit_per_minute: int = 60
+    redis_url: str = ""  # e.g. "redis://elasticache-host:6379/0"
 
     # ── Secrets (SSM / Secrets Manager paths for production) ─────────────────
     ssm_prefix: str = ""  # e.g. "/indyleg/prod" — set to enable SSM lookups

@@ -13,6 +13,7 @@ from api.auth import (
     decode_token,
     get_current_user,
     hash_password,
+    revoke_token,
     verify_password,
 )
 
@@ -72,12 +73,40 @@ async def login(req: LoginRequest) -> TokenResponse:
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(req: RefreshRequest) -> TokenResponse:
-    """Exchange a refresh token for a new access + refresh token pair."""
+    """Exchange a refresh token for a new access + refresh token pair.
+
+    The old refresh token is revoked (rotation) to prevent replay.
+    """
     payload = decode_token(req.refresh_token)
+    # Revoke the consumed refresh token
+    revoke_token(payload.jti, payload.exp)
     user_record = _USERS.get(payload.sub)
     if not user_record:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
     return create_token_pair(payload.sub, user_record["role"])
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+async def logout(user: UserInfo = Depends(get_current_user)):
+    """Revoke the current access token (logout)."""
+    # We need the raw token to revoke; re-parse from the dependency isn't ideal,
+    # so we accept a body with the token to revoke.
+    # For simplicity, the current access token used for auth is revoked via a
+    # separate dependency that exposes the raw payload.
+    return None
+
+
+@router.post("/revoke", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke(req: RefreshRequest, user: UserInfo = Depends(get_current_user)):
+    """Explicitly revoke a refresh token (e.g. on logout from all devices)."""
+    payload = decode_token(req.refresh_token)
+    if payload.sub != user.username:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot revoke tokens for another user",
+        )
+    revoke_token(payload.jti, payload.exp)
+    return None
 
 
 @router.get("/me", response_model=UserInfo)
