@@ -85,6 +85,25 @@ python_version = "3.11"
 strict = true
 ignore_missing_imports = true
 
+[tool.coverage.run]
+branch = true
+source = ["api", "agents", "config", "generation", "ingestion", "retrieval"]
+omit = [
+    "tests/*",
+    "infrastructure/*",
+    "*/__main__.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 60
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.",
+    "@overload",
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
