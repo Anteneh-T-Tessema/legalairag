@@ -1,0 +1,68 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: indyleg
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: indyleg
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  opensearch:
+    image: opensearchproject/opensearch:2.14.0
+    environment:
+      - discovery.type=single-node
+      - DISABLE_SECURITY_PLUGIN=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - osdata:/usr/share/opensearch/data
+
+  localstack:
+    image: localstack/localstack:3.5
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3,sqs,batch,lambda
+      - DEFAULT_REGION=us-east-1
+    volumes:
+      - localstackdata:/var/lib/localstack
+      - ./infrastructure/docker/localstack-init.sh:/etc/localstack/init/ready.d/init.sh
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.api
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql+psycopg://indyleg:changeme@postgres:5432/indyleg
+      - OPENSEARCH_HOST=http://opensearch:9200
+    depends_on:
+      - postgres
+      - opensearch
+
+  worker:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.worker
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql+psycopg://indyleg:changeme@postgres:5432/indyleg
+      - OPENSEARCH_HOST=http://opensearch:9200
+    depends_on:
+      - postgres
+      - opensearch
+      - localstack
+
+volumes:
+  pgdata:
+  osdata:
+  localstackdata:
