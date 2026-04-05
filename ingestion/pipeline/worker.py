@@ -90,6 +90,18 @@ class IngestionWorker:
             metadata=metadata,
         )
 
+        # Content-hash deduplication: skip embedding if document is unchanged.
+        # record_version() returns is_new_version=False when the content hash
+        # matches the last ingested version, preventing redundant Bedrock calls.
+        _version_id, is_new_version = await self._indexer.record_version(
+            source_id=message.source_id,
+            content=content,
+            metadata=metadata,
+        )
+        if not is_new_version:
+            logger.info("skipping_unchanged_document", source_id=message.source_id)
+            return
+
         chunks = self._chunker.chunk(doc)
         logger.info("chunks_created", source_id=message.source_id, count=len(chunks))
 

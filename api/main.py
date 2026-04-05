@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.middleware.audit_log import AuditLogMiddleware
 from api.routers import documents, search
 from api.routers.auth_router import router as auth_router
+from api.routers.fraud import router as fraud_router
 from config.logging import configure_logging
 from config.settings import settings
 
@@ -34,6 +35,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(search.router, prefix="/api/v1")
 app.include_router(documents.router, prefix="/api/v1")
+app.include_router(fraud_router, prefix="/api/v1")
 
 
 # ── Health ────────────────────────────────────────────────────────────────────

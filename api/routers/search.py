@@ -41,6 +41,7 @@ async def search(req: SearchRequest, _user: UserInfo = Depends(get_current_user)
         jurisdiction=req.jurisdiction or parsed.jurisdiction,
         case_type=req.case_type or parsed.case_type,
         top_k=req.top_k * 4,  # over-fetch for re-ranker
+        bm25_weight=parsed.bm25_weight,
     )
 
     ranked = await _reranker.rerank(

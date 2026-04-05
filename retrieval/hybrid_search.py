@@ -194,6 +194,8 @@ class HybridSearcher:
         sorted_ids = sorted(rrf_scores, key=lambda cid: rrf_scores[cid], reverse=True)
         results = []
         for cid in sorted_ids[:k]:
+            if rrf_scores[cid] <= 0:
+                break  # remaining items have zero contribution; skip them
             r = chunk_map[cid]
             r.score = rrf_scores[cid]
             results.append(r)

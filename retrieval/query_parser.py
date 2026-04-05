@@ -77,16 +77,6 @@ class ParsedQuery:
     temporal_filter: bool = False      # Whether to apply temporal validity filter
 
 
-@dataclass
-class ParsedQuery:
-    raw: str
-    normalized: str
-    jurisdiction: str | None
-    case_type: str | None
-    citations_mentioned: list[str]
-    keywords: list[str]
-
-
 def parse_legal_query(query: str) -> ParsedQuery:
     """
     Extract structured signals from a free-text legal query:
