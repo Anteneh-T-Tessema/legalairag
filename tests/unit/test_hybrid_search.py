@@ -144,9 +144,13 @@ class TestKeywordSearchParamOrdering:
     """Regression tests for the _keyword_search param-ordering bug.
 
     The SQL template has a leading %s in the ts_rank() call (SELECT list),
-    then a %s in the WHERE tsvector clause. The correct params_final must be
-    [query_text] + params  — i.e. query_text appears TWICE, once as the
-    ts_rank argument and once as the plainto_tsquery argument.
+    then a %s in the WHERE tsvector clause.  The correct params_final must be:
+
+        [query_text(ts_rank), or_query(WHERE), [jurisdiction?], [case_type?], n]
+
+    where or_query = " OR ".join(query_text.split()) expands the terms with
+    boolean OR for broad recall, while ts_rank still uses the original AND
+    query for relevance scoring.
 
     If the ordering is wrong (e.g. params_final = params + [query_text]),
     jurisdiction/case_type values end up in the wrong placeholder and the
@@ -158,17 +162,18 @@ class TestKeywordSearchParamOrdering:
         return s
 
     def test_params_final_starts_with_query_text_no_filters(self) -> None:
-        """Without filters, params_final = [query_text, query_text, n]."""
+        """Without filters, params_final = [query_text, or_query, n]."""
         query_text = "battery Indiana"
         n = 5
         jurisdiction = None
         case_type = None
 
         # Build params in the same way _keyword_search does
+        or_query = " OR ".join(query_text.split())
         where_clauses = [
-            "to_tsvector('english', content) @@ plainto_tsquery('english', %s)"
+            "to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"
         ]
-        params: list = [query_text]
+        params: list = [or_query]
         if jurisdiction:
             where_clauses.append("metadata->>'jurisdiction' = %s")
             params.append(jurisdiction)
@@ -178,23 +183,25 @@ class TestKeywordSearchParamOrdering:
         params.append(n)
         params_final: list = [query_text] + params
 
-        # The ts_rank placeholder comes first in SELECT; WHERE tsvector second
+        # ts_rank arg (SELECT) uses original AND query for relevance scoring
         assert params_final[0] == query_text, "ts_rank arg must be query_text"
-        assert params_final[1] == query_text, "WHERE tsvector arg must be query_text"
+        # WHERE arg uses OR-expanded query for broad recall
+        assert params_final[1] == or_query, "WHERE tsvector arg must be or_query"
         assert params_final[-1] == n, "LIMIT arg must be last"
         assert len(params_final) == 3
 
     def test_params_final_with_jurisdiction(self) -> None:
-        """With jurisdiction filter, params_final = [query_text, query_text, jurisdiction, n]."""
+        """With jurisdiction filter, params_final = [query_text, or_query, jurisdiction, n]."""
         query_text = "murder penalty"
         n = 10
         jurisdiction = "Indiana"
         case_type = None
 
+        or_query = " OR ".join(query_text.split())
         where_clauses = [
-            "to_tsvector('english', content) @@ plainto_tsquery('english', %s)"
+            "to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"
         ]
-        params: list = [query_text]
+        params: list = [or_query]
         if jurisdiction:
             where_clauses.append("metadata->>'jurisdiction' = %s")
             params.append(jurisdiction)
@@ -205,7 +212,7 @@ class TestKeywordSearchParamOrdering:
         params_final: list = [query_text] + params
 
         assert params_final[0] == query_text
-        assert params_final[1] == query_text
+        assert params_final[1] == or_query, "WHERE tsvector arg must be or_query"
         assert params_final[2] == jurisdiction, (
             "jurisdiction must be the 3rd param, not mixed into tsvector position"
         )
@@ -213,16 +220,17 @@ class TestKeywordSearchParamOrdering:
         assert len(params_final) == 4
 
     def test_params_final_with_both_filters(self) -> None:
-        """params_final = [query_text, query_text, jurisdiction, case_type, n]."""
+        """params_final = [query_text, or_query, jurisdiction, case_type, n]."""
         query_text = "child custody modification"
         n = 7
         jurisdiction = "Indiana"
         case_type = "Family"
 
+        or_query = " OR ".join(query_text.split())
         where_clauses = [
-            "to_tsvector('english', content) @@ plainto_tsquery('english', %s)"
+            "to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"
         ]
-        params: list = [query_text]
+        params: list = [or_query]
         if jurisdiction:
             where_clauses.append("metadata->>'jurisdiction' = %s")
             params.append(jurisdiction)
@@ -233,7 +241,7 @@ class TestKeywordSearchParamOrdering:
         params_final: list = [query_text] + params
 
         assert params_final[0] == query_text
-        assert params_final[1] == query_text
+        assert params_final[1] == or_query, "WHERE tsvector arg must be or_query"
         assert params_final[2] == jurisdiction
         assert params_final[3] == case_type
         assert params_final[4] == n

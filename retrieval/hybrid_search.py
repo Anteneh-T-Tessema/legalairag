@@ -179,8 +179,18 @@ class HybridSearcher:
     ) -> list[SearchResult]:
         """PostgreSQL full-text search over content — supplements vector search in dev mode."""
         conn = await self._get_conn()
-        where_clauses = ["to_tsvector('english', content) @@ plainto_tsquery('english', %s)"]
-        params: list[Any] = [query_text]
+
+        # OR-expanded query for broad recall in the WHERE clause.
+        # "murder penalty Indiana" → "murder OR penalty OR Indiana"
+        # websearch_to_tsquery treats the word "OR" as boolean union.
+        # This ensures chunks are returned even when they only contain a
+        # subset of the query terms (e.g. a murder statute without "penalty").
+        or_query = " OR ".join(query_text.split())
+
+        where_clauses = [
+            "to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"
+        ]
+        params: list[Any] = [or_query]
 
         if jurisdiction:
             where_clauses.append("metadata->>'jurisdiction' = %s")
@@ -199,9 +209,10 @@ class HybridSearcher:
             ORDER BY score DESC
             LIMIT %s;
         """
-        # SQL order: ts_rank %s (SELECT), WHERE tsvector %s,
-        # [WHERE jurisdiction %s], [WHERE case_type %s], LIMIT %s
-        # params = [query_text, [jurisdiction?], [case_type?], n]
+        # SQL order: ts_rank %s (SELECT) uses original AND query for relevance scoring;
+        # WHERE %s uses OR-expanded query for broad recall;
+        # [WHERE jurisdiction %s], [WHERE case_type %s], LIMIT %s.
+        # params = [or_query, [jurisdiction?], [case_type?], n]
         params_final: list[Any] = [query_text] + params  # prepend ts_rank query_text
 
         async with conn.cursor() as cur:

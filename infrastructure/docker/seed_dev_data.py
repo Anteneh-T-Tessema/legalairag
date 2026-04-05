@@ -398,7 +398,8 @@ CHUNKS = [
             "commits murder, a felony. "
             "Sentence under IC 35-50-2-9: advisory 55 years, minimum 45 years, maximum "
             "65 years. Life imprisonment without parole if aggravating circumstances "
-            "outweigh mitigating circumstances. Fine up to $10,000."
+            "outweigh mitigating circumstances. Maximum criminal penalty includes a "
+            "fine up to $10,000."
         ),
         "citations": ["IC 35-42-1-1", "IC 35-50-2-9"],
         "metadata": {
@@ -497,7 +498,7 @@ CHUNKS = [
         "section": "IC 35-50-2-9",
         "section_idx": 0,
         "content": (
-            "Indiana Code § 35-50-2-9 — Murder sentencing. "
+            "Indiana Code § 35-50-2-9 — Murder sentencing and criminal penalties. "
             "For a conviction of murder (IC 35-42-1-1), the court shall sentence the person "
             "to a fixed term between 45 and 65 years with an advisory sentence of 55 years, "
             "or to life imprisonment without parole. "
@@ -1592,6 +1593,203 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "constitution", "title": "1", "article": "1",
+        },
+    },
+    # ── Expungement (IC 35-38-9) ──────────────────────────────────────────────
+    {
+        "chunk_id": "ic-35-38-9-1-001",
+        "source_id": "indiana-code-35-38-9",
+        "section": "IC 35-38-9-1",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 35-38-9-1 — Expungement of arrest records (no conviction). "
+            "A person who was arrested but not convicted may petition the court that would "
+            "have had jurisdiction to expunge arrest records. Eligibility: no charges filed, "
+            "charges dismissed, or conviction vacated on appeal. "
+            "Waiting period: 1 year after the arrest date, or immediately if all charges "
+            "were dismissed with prejudice or the person was acquitted. "
+            "Effect of expungement: the court and law enforcement records are sealed; the "
+            "expunged arrest may not be disclosed to non-criminal justice entities. "
+            "The person may lawfully state they were not arrested for the expunged matter "
+            "on applications for employment, education, or housing. "
+            "An expunged arrest record is accessible only to criminal justice agencies and "
+            "certain licensing boards (IC 35-38-9-10(b))."
+        ),
+        "citations": ["IC 35-38-9-1"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "38",
+        },
+    },
+    {
+        "chunk_id": "ic-35-38-9-2-001",
+        "source_id": "indiana-code-35-38-9",
+        "section": "IC 35-38-9-2",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 35-38-9-2 — Expungement of misdemeanor convictions. "
+            "A person convicted of a Class A, B, or C misdemeanor (or Level 6 / Class D "
+            "felony treated as a misdemeanor) may petition for expungement. "
+            "Waiting period: 5 years after the date of conviction. "
+            "Requirements: no criminal charges pending; no petitions for expungement "
+            "within 3 years; all fines, fees, and restitution paid in full. "
+            "Effect: the conviction records are sealed by the court; background check "
+            "services may not disclose the conviction; the person may lawfully deny the "
+            "conviction on private employer applications. "
+            "IC 35-38-9-9(f): a person who has an expunged record sealed is not required to "
+            "disclose the conviction to a private employer; a private employer may not use "
+            "the sealed conviction as a basis for refusing to hire or for termination. "
+            "Exception: certain licensing boards and criminal justice employment may still "
+            "access sealed records."
+        ),
+        "citations": ["IC 35-38-9-2", "IC 35-38-9-9"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "38",
+        },
+    },
+    {
+        "chunk_id": "ic-35-38-9-3-001",
+        "source_id": "indiana-code-35-38-9",
+        "section": "IC 35-38-9-3",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 35-38-9-3 — Expungement of Level 6 felony convictions. "
+            "A person convicted of a Level 6 felony (Class D felony under prior law) may "
+            "petition for expungement under IC 35-38-9-3. "
+            "Waiting period: 8 years after the date of conviction OR 3 years after "
+            "completion of sentence (whichever is later). "
+            "Requirements: no criminal charges pending; all fines, fees, and restitution "
+            "paid; no prior expungement petitions denied within 3 years; and the "
+            "prosecutor does not object (or the court overrides the objection with findings). "
+            "The court has discretion to deny an expungement petition even if the "
+            "petitioner meets all requirements if the interests of justice would not be "
+            "served. If granted, the conviction records are sealed (not destroyed). "
+            "Convictions for Level 6 felonies that are sex or violent offenses are not "
+            "eligible (IC 35-38-9-8)."
+        ),
+        "citations": ["IC 35-38-9-3", "IC 35-38-9-8"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "38",
+        },
+    },
+    {
+        "chunk_id": "ic-35-38-9-4-001",
+        "source_id": "indiana-code-35-38-9",
+        "section": "IC 35-38-9-4",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 35-38-9-4 — Expungement of Level 1 through Level 5 felony "
+            "convictions. "
+            "A person convicted of a Level 1, 2, 3, 4, or 5 felony (other than those "
+            "listed as ineligible under IC 35-38-9-8) may petition for expungement. "
+            "Waiting period: 10 years after the date of conviction OR 5 years after "
+            "completion of sentence (whichever is later). "
+            "Additional requirement: the prosecutor must consent (or the court may grant "
+            "over objection if the court makes written findings that the person has been "
+            "rehabilitated and the interests of justice would be served). "
+            "Prosecutor's consent is required for Level 1–4 felonies; discretionary for "
+            "Level 5 felonies. "
+            "Effect: records are marked 'expunged' and restricted to a limited set of "
+            "agencies; the person may lawfully deny the conviction on private employer "
+            "applications (IC 35-38-9-9(f))."
+        ),
+        "citations": ["IC 35-38-9-4", "IC 35-38-9-9"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "38",
+        },
+    },
+    {
+        "chunk_id": "ic-35-38-9-8-001",
+        "source_id": "indiana-code-35-38-9",
+        "section": "IC 35-38-9-8",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 35-38-9-8 — Offenses ineligible for expungement. "
+            "The following convictions may NOT be expunged under Indiana law: "
+            "(1) Murder (IC 35-42-1-1); "
+            "(2) Sex or violent offenses requiring registration on the SVOR "
+            "(IC 11-8-8) — rape, child molesting, sexual misconduct with a minor, "
+            "sex trafficking, and similar offenses; "
+            "(3) Any offense resulting in serious bodily injury to another person that "
+            "is a Level 3 or higher felony; "
+            "(4) Official misconduct (IC 35-44.1-1-1) by a public servant; "
+            "(5) Perjury (IC 35-44.1-2-1); "
+            "(6) Human trafficking offenses; "
+            "(7) Kidnapping; "
+            "(8) Any conviction for which the record-keeper is the Department of Correction "
+            "for a non-expungable offense. "
+            "A person who has been convicted of murder, a sex crime requiring registration, "
+            "or an offense resulting in the homicide of another person is permanently "
+            "ineligible to apply for expungement of any Indiana conviction."
+        ),
+        "citations": ["IC 35-38-9-8", "IC 11-8-8"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "38",
+        },
+    },
+    {
+        "chunk_id": "ic-35-38-9-10-001",
+        "source_id": "indiana-code-35-38-9",
+        "section": "IC 35-38-9-10",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 35-38-9-10 — Expungement petition procedure. "
+            "To petition for expungement: "
+            "(1) File a verified petition in the sentencing court (or court with "
+            "jurisdiction over county of conviction); "
+            "(2) State the conviction(s) to be expunged, case numbers, dates; "
+            "(3) Attach proof that all fines, fees, court costs, and restitution have "
+            "been paid; "
+            "(4) Attach proof that no criminal charges are pending; "
+            "(5) Serve the prosecutor of the county; "
+            "The court shall set a hearing date. The prosecutor may object or consent. "
+            "If no objection within 30 days, the court may grant the petition without a "
+            "hearing (for misdemeanors and Class D / Level 6 felonies). "
+            "For Level 1–5 felonies, a hearing is required. "
+            "A person may file only ONE expungement petition in their lifetime "
+            "(IC 35-38-9-9(g)) — all eligible convictions must be included in a single "
+            "petition. Once an expungement petition is denied, the person must wait "
+            "3 years before re-petitioning."
+        ),
+        "citations": ["IC 35-38-9-10", "IC 35-38-9-9"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "38",
+        },
+    },
+    {
+        "chunk_id": "ic-35-38-9-effect-001",
+        "source_id": "indiana-code-35-38-9",
+        "section": "IC 35-38-9-9",
+        "section_idx": 0,
+        "content": (
+            "Indiana expungement effect on employment and background checks "
+            "(IC 35-38-9-9). "
+            "Once conviction records are expunged (sealed): "
+            "— Private employers may not consider the sealed conviction in hiring, "
+            "termination, or promotion decisions; it is unlawful employment discrimination "
+            "to deny a job solely because of an expunged record (IC 35-38-9-10(b)(3)). "
+            "— The person may lawfully state on a private employer application that they "
+            "have no prior conviction for the expunged offense (IC 35-38-9-9(f)). "
+            "— Commercial background check services must suppress the expunged record. "
+            "— Law enforcement, criminal justice agencies, the Department of Child "
+            "Services (DCS), certain professional licensing boards (medicine, law, "
+            "education), and agencies employing persons working with children or "
+            "vulnerable adults retain access to sealed records. "
+            "— Federal background checks (NICS for firearms, federal employment) are NOT "
+            "affected by Indiana expungement — the FBI's records are separate. "
+            "— Gun rights: an expungement of a felony conviction does NOT automatically "
+            "restore federal firearms rights (18 U.S.C. § 922(g)(1)); a separate "
+            "restoration petition may be needed under IC 35-47-4-7."
+        ),
+        "citations": ["IC 35-38-9-9", "IC 35-47-4-7"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "35", "article": "38",
         },
     },
 ]
