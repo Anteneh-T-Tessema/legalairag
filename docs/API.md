@@ -3,8 +3,26 @@
 Complete API reference for the IndyLeg FastAPI backend.
 
 **Base URL**: `https://your-alb-dns/api/v1`
+**Version**: 0.2.0 | **Date**: April 2026
 
-All endpoints except `/auth/token` and `/health` require `Authorization: Bearer <token>`.
+All endpoints except `/auth/token`, `/health`, and `/metrics` require `Authorization: Bearer <token>`.
+
+### Endpoint Summary
+
+| Method | Path | Auth | Roles | Description |
+|---|---|---|---|---|
+| POST | `/auth/token` | No | Any | Login |
+| POST | `/auth/refresh` | No | Any | Refresh access token (with rotation) |
+| POST | `/auth/logout` | Yes | Any | Logout (revoke current token) |
+| POST | `/auth/revoke` | Yes | ADMIN | Revoke any token |
+| GET | `/auth/me` | Yes | Any | Current user profile |
+| POST | `/search` | Yes | Any | Hybrid retrieval search |
+| POST | `/search/ask` | Yes | ADMIN, ATTORNEY, CLERK | RAG answer generation |
+| POST | `/fraud/analyze` | Yes | ADMIN, ATTORNEY | Fraud pattern analysis |
+| POST | `/documents/ingest` | Yes | ADMIN, ATTORNEY | Start document ingestion |
+| GET | `/health` | No | — | Health check |
+| GET | `/metrics` | Yes | ADMIN | Prometheus metrics |
+| GET | `/metrics/json` | Yes | ADMIN | Metrics in JSON format |
 
 ---
 
@@ -39,6 +57,8 @@ Authenticate with username and password to receive JWT tokens.
 
 ### `POST /auth/refresh` — Refresh Access Token
 
+Exchanges a valid refresh token for a new access/refresh token pair. The old refresh token is **revoked** after use (rotation).
+
 **Request:**
 ```json
 { "refresh_token": "eyJ..." }
@@ -46,7 +66,46 @@ Authenticate with username and password to receive JWT tokens.
 
 **Response `200 OK`:**
 ```json
-{ "access_token": "eyJ...", "token_type": "bearer", "expires_in": 3600 }
+{
+  "access_token": "eyJ...(new)...",
+  "refresh_token": "eyJ...(new, rotated)...",
+  "token_type": "bearer",
+  "expires_in": 3600
+}
+```
+
+> **Note**: Each refresh token can only be used once. After refresh, the old refresh token is added to the revocation blacklist.
+
+### `POST /auth/logout` — Logout
+
+Revokes the current access token. The token is added to the blacklist and will be rejected on subsequent use.
+
+**Headers:** `Authorization: Bearer <access_token>`
+
+**Response `200 OK`:**
+```json
+{ "message": "Successfully logged out" }
+```
+
+### `POST /auth/revoke` — Revoke Token (Admin Only)
+
+Allows administrators to revoke any user's token.
+
+**Required Role**: `ADMIN`
+
+**Request:**
+```json
+{ "token": "eyJ...(token to revoke)..." }
+```
+
+**Response `200 OK`:**
+```json
+{ "message": "Token revoked" }
+```
+
+**Response `403 Forbidden`:**
+```json
+{ "detail": "Insufficient permissions" }
 ```
 
 ### `GET /auth/me` — Current User Profile
@@ -189,7 +248,7 @@ Runs the FraudDetectionAgent over filings matching the query. Returns risk asses
 
 ---
 
-## Health
+## Health & Monitoring
 
 ### `GET /health`
 
@@ -199,13 +258,108 @@ No authentication required.
 ```json
 {
   "status": "healthy",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "checks": {
     "database": "ok",
     "opensearch": "ok",
     "bedrock": "ok"
   }
 }
+```
+
+### `GET /metrics` — Prometheus Metrics
+
+Returns metrics in Prometheus text exposition format.
+
+**Required Role**: `ADMIN`
+
+**Response `200 OK`** (Content-Type: text/plain):
+```text
+# HELP http_requests_total Total HTTP requests
+# TYPE http_requests_total counter
+http_requests_total{method="POST",endpoint="/search/ask",status="200"} 142
+http_request_duration_seconds_bucket{endpoint="/search/ask",le="1.0"} 89
+...
+```
+
+### `GET /metrics/json` — JSON Metrics
+
+Returns the same metrics as `/metrics` in JSON format for programmatic consumption.
+
+**Required Role**: `ADMIN`
+
+**Response `200 OK`:**
+```json
+{
+  "requests": {
+    "total": 1420,
+    "by_endpoint": {
+      "/search/ask": 580,
+      "/search": 340,
+      "/fraud/analyze": 120,
+      "/auth/token": 380
+    }
+  },
+  "latency": {
+    "p50_ms": 450,
+    "p95_ms": 1800,
+    "p99_ms": 3200
+  },
+  "rate_limits": {
+    "total_hits": 23
+  }
+}
+```
+
+---
+
+## Document Ingestion
+
+### `POST /documents/ingest` — Start Document Ingestion
+
+Queues a document for ingestion via the SQS pipeline. The document is downloaded, parsed, chunked, embedded, and indexed asynchronously.
+
+**Required Roles**: `ADMIN`, `ATTORNEY`
+
+**Request:**
+```json
+{
+  "source_url": "https://courts.indiana.gov/filings/49D01-2024-CT-001234.pdf",
+  "document_type": "court_filing",
+  "metadata": {
+    "jurisdiction": "Marion County",
+    "case_type": "civil"
+  }
+}
+```
+
+**Response `202 Accepted`:**
+```json
+{
+  "message": "Document queued for ingestion",
+  "ingestion_id": "ing-a1b2c3d4"
+}
+```
+
+---
+
+## Rate Limiting
+
+All authenticated endpoints are subject to rate limiting.
+
+**Default**: 60 requests per minute per client IP.
+
+**Response Headers** (on every request):
+```text
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1713200460
+```
+
+**Response `429 Too Many Requests`:**
+```json
+{ "detail": "Rate limit exceeded. Try again in 15 seconds." }
+```
 ```
 
 ---

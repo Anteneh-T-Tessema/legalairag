@@ -2090,4 +2090,4 @@ cdk deploy --all
 
 ## License
 
-Proprietary — State of Indiana.
+This is a sample RAG application developed by Anteneh Tessema for demonstration purposes only.

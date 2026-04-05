@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import time
 from collections import defaultdict
+from typing import Any
 
 from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -25,7 +26,7 @@ _WINDOW_SECONDS = 60
 # Redis backend (preferred in production)
 # ---------------------------------------------------------------------------
 
-_redis: object | None = None
+_redis: Any = None
 
 
 def _get_redis():
@@ -69,8 +70,8 @@ def _redis_consume(client_ip: str) -> tuple[bool, int]:
             r.expire(key, _WINDOW_SECONDS)
         remaining = max(0, _RATE_LIMIT - current)
         return current <= _RATE_LIMIT, remaining
-    except Exception:
-        raise RuntimeError("redis error")
+    except Exception as exc:
+        raise RuntimeError("redis error") from exc
 
 
 # ---------------------------------------------------------------------------
