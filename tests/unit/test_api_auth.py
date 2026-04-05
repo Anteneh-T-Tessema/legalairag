@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from api.auth import Role, create_access_token, create_refresh_token, revoke_token
+from api.auth import Role, create_access_token, create_refresh_token
 from api.main import app
 
 client = TestClient(app, raise_server_exceptions=False)

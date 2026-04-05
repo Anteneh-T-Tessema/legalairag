@@ -91,20 +91,10 @@ def is_token_revoked(jti: str) -> bool:
     if r is not None:
         try:
             return r.exists(f"revoked:{jti}") > 0
-        except Exception:
+        except Exception:  # noqa: S110 — intentional fallback to in-memory blacklist
             pass
     with _blacklist_lock:
         return jti in _blacklist
-
-
-# ── Roles ────────────────────────────────────────────────────────────────────
-
-
-class Role(StrEnum):
-    ADMIN = "admin"
-    ATTORNEY = "attorney"
-    CLERK = "clerk"
-    VIEWER = "viewer"
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────

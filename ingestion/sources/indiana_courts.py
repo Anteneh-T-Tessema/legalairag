@@ -345,7 +345,9 @@ class MyCaseClient:
             next_hearing = date.fromisoformat(data["nextHearing"])
         return MyCaseSearchResult(
             case_number=data.get("caseNumber", ""),
-            case_type=CASE_TYPE_CODES.get(data.get("caseTypeCode", ""), data.get("caseType", "Unknown")),
+            case_type=CASE_TYPE_CODES.get(
+                data.get("caseTypeCode", ""), data.get("caseType", "Unknown")
+            ),
             case_type_code=data.get("caseTypeCode", ""),
             court=data.get("court", ""),
             county=data.get("county", ""),
