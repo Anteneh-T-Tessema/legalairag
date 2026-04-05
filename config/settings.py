@@ -84,6 +84,7 @@ class Settings(BaseSettings):
     law_resource_indiana_filter: bool = True  # Filter 7th Cir opinions for Indiana
     # Indiana General Assembly — statutes
     indiana_iga_api_base: str = "https://iga.in.gov/api/20231116/mobile-sdk"
+    indiana_iga_api_key: str = ""  # Register free at https://api.iga.in.gov/
     # Indiana Register — administrative rules and executive orders
     indiana_register_base: str = "https://www.in.gov/legislative/register/"
 

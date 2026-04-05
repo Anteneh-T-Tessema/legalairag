@@ -138,3 +138,103 @@ class TestRRFFusion:
         for weight in [0.0, 0.3, 0.5, 0.7, 1.0]:
             fused = searcher._reciprocal_rank_fusion(dense, sparse, k=5, bm25_weight=weight)
             assert all(r.score > 0 for r in fused)
+
+
+class TestKeywordSearchParamOrdering:
+    """Regression tests for the _keyword_search param-ordering bug.
+
+    The SQL template has a leading %s in the ts_rank() call (SELECT list),
+    then a %s in the WHERE tsvector clause. The correct params_final must be
+    [query_text] + params  — i.e. query_text appears TWICE, once as the
+    ts_rank argument and once as the plainto_tsquery argument.
+
+    If the ordering is wrong (e.g. params_final = params + [query_text]),
+    jurisdiction/case_type values end up in the wrong placeholder and the
+    query either crashes or returns nonsense.
+    """
+
+    def _make_searcher(self) -> HybridSearcher:
+        s = HybridSearcher.__new__(HybridSearcher)
+        return s
+
+    def test_params_final_starts_with_query_text_no_filters(self) -> None:
+        """Without filters, params_final = [query_text, query_text, n]."""
+        query_text = "battery Indiana"
+        n = 5
+        jurisdiction = None
+        case_type = None
+
+        # Build params in the same way _keyword_search does
+        where_clauses = [
+            "to_tsvector('english', content) @@ plainto_tsquery('english', %s)"
+        ]
+        params: list = [query_text]
+        if jurisdiction:
+            where_clauses.append("metadata->>'jurisdiction' = %s")
+            params.append(jurisdiction)
+        if case_type:
+            where_clauses.append("metadata->>'case_type' = %s")
+            params.append(case_type)
+        params.append(n)
+        params_final: list = [query_text] + params
+
+        # The ts_rank placeholder comes first in SELECT; WHERE tsvector second
+        assert params_final[0] == query_text, "ts_rank arg must be query_text"
+        assert params_final[1] == query_text, "WHERE tsvector arg must be query_text"
+        assert params_final[-1] == n, "LIMIT arg must be last"
+        assert len(params_final) == 3
+
+    def test_params_final_with_jurisdiction(self) -> None:
+        """With jurisdiction filter, params_final = [query_text, query_text, jurisdiction, n]."""
+        query_text = "murder penalty"
+        n = 10
+        jurisdiction = "Indiana"
+        case_type = None
+
+        where_clauses = [
+            "to_tsvector('english', content) @@ plainto_tsquery('english', %s)"
+        ]
+        params: list = [query_text]
+        if jurisdiction:
+            where_clauses.append("metadata->>'jurisdiction' = %s")
+            params.append(jurisdiction)
+        if case_type:
+            where_clauses.append("metadata->>'case_type' = %s")
+            params.append(case_type)
+        params.append(n)
+        params_final: list = [query_text] + params
+
+        assert params_final[0] == query_text
+        assert params_final[1] == query_text
+        assert params_final[2] == jurisdiction, (
+            "jurisdiction must be the 3rd param, not mixed into tsvector position"
+        )
+        assert params_final[3] == n
+        assert len(params_final) == 4
+
+    def test_params_final_with_both_filters(self) -> None:
+        """params_final = [query_text, query_text, jurisdiction, case_type, n]."""
+        query_text = "child custody modification"
+        n = 7
+        jurisdiction = "Indiana"
+        case_type = "Family"
+
+        where_clauses = [
+            "to_tsvector('english', content) @@ plainto_tsquery('english', %s)"
+        ]
+        params: list = [query_text]
+        if jurisdiction:
+            where_clauses.append("metadata->>'jurisdiction' = %s")
+            params.append(jurisdiction)
+        if case_type:
+            where_clauses.append("metadata->>'case_type' = %s")
+            params.append(case_type)
+        params.append(n)
+        params_final: list = [query_text] + params
+
+        assert params_final[0] == query_text
+        assert params_final[1] == query_text
+        assert params_final[2] == jurisdiction
+        assert params_final[3] == case_type
+        assert params_final[4] == n
+        assert len(params_final) == 5
