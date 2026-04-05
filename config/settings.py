@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     # ── Storage ───────────────────────────────────────────────────────────────
     s3_bucket_raw: str = "indyleg-raw-documents"
     s3_bucket_processed: str = "indyleg-processed-chunks"
+    audit_s3_bucket: str = ""  # e.g. "indyleg-audit-logs" — set to enable S3 audit persistence
 
     # ── Queues ────────────────────────────────────────────────────────────────
     sqs_ingestion_queue_url: str = ""

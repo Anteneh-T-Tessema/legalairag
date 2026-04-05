@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import json
 import uuid
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
 from config.logging import get_logger
+from config.settings import settings
 
 logger = get_logger(__name__)
 
@@ -118,12 +120,57 @@ class BaseAgent(ABC):
             success=success,
             error=error,
         )
-        # TODO: persist `run` to a audit log store (DynamoDB / RDS table)
+        # ── Persist to audit log store ─────────────────────────────────
+        duration_ms = int((run.finished_at - run.started_at).total_seconds() * 1000)
+        await self._write_audit_log(run)
         logger.info(
             "agent_run_complete",
             run_id=run.run_id,
             agent=run.agent_name,
             success=run.success,
             tool_calls=len(run.tool_calls),
-            duration_ms=int((run.finished_at - run.started_at).total_seconds() * 1000),
+            duration_ms=duration_ms,
         )
+
+    # ── Audit log persistence ────────────────────────────────────────────────
+
+    async def _write_audit_log(self, run: AgentRun) -> None:
+        """Persist an AgentRun to the configured audit store.
+
+        Tries S3 first (``audit_s3_bucket`` setting), then falls back to
+        structured logging so that no audit record is ever silently lost.
+        """
+        record = _serialise_run(run)
+        s3_bucket = getattr(settings, "audit_s3_bucket", "")
+        if s3_bucket:
+            try:
+                import aioboto3  # type: ignore[import-untyped]
+
+                session = aioboto3.Session()
+                async with session.client("s3") as s3:
+                    key = (
+                        f"audit/{run.agent_name}/{run.started_at:%Y/%m/%d}/"
+                        f"{run.run_id}.json"
+                    )
+                    await s3.put_object(
+                        Bucket=s3_bucket,
+                        Key=key,
+                        Body=json.dumps(record, default=str),
+                        ContentType="application/json",
+                    )
+                    logger.debug("audit_s3_written", key=key, bucket=s3_bucket)
+                    return
+            except Exception:
+                logger.warning("audit_s3_failed, falling back to log", exc_info=True)
+
+        # Fallback: emit the full record as structured log (always captured
+        # by CloudWatch / whatever log drain is configured).
+        logger.info("agent_audit_record", **record)
+
+
+def _serialise_run(run: AgentRun) -> dict[str, Any]:
+    """Convert an AgentRun to a JSON-safe dict."""
+    d = asdict(run)
+    d["started_at"] = run.started_at.isoformat()
+    d["finished_at"] = run.finished_at.isoformat()
+    return d

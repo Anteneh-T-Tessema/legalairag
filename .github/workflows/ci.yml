@@ -69,14 +69,14 @@ jobs:
         env:
           DATABASE_URL: postgresql+psycopg://indyleg:changeme@localhost:5432/indyleg
           APP_ENV: test
-          API_SECRET_KEY: test-secret-key-for-ci
-        run: pytest tests/unit/ -v --tb=short
+          API_SECRET_KEY: test-secret-key-for-ci-000
+        run: pytest tests/unit/ -v --tb=short --cov=. --cov-report=term-missing --cov-fail-under=60
 
       - name: Integration tests
         env:
           DATABASE_URL: postgresql+psycopg://indyleg:changeme@localhost:5432/indyleg
           APP_ENV: test
-          API_SECRET_KEY: test-secret-key-for-ci
+          API_SECRET_KEY: test-secret-key-for-ci-000
           AWS_ACCESS_KEY_ID: test
           AWS_SECRET_ACCESS_KEY: test
           AWS_DEFAULT_REGION: us-east-1
