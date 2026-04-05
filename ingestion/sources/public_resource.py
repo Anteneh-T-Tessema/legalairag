@@ -21,7 +21,7 @@ import asyncio
 import hashlib
 import re
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date
 from typing import Any
 
 import httpx
@@ -56,7 +56,8 @@ class PublicLegalOpinion:
     opinion_id: str          # Stable, source-prefixed ID e.g. "cl-12345" or "lro-F3-123"
     source: str              # "courtlistener" | "law_resource_org"
     court: str               # Canonical court name
-    court_level: str         # "supreme" | "appeals" | "trial" | "federal_circuit" | "federal_supreme"
+    # "supreme" | "appeals" | "trial" | "federal_circuit" | "federal_supreme"
+    court_level: str
     case_name: str
     docket_number: str
     date_filed: date
@@ -104,7 +105,7 @@ class CourtListenerClient:
             follow_redirects=True,
         )
 
-    async def __aenter__(self) -> "CourtListenerClient":
+    async def __aenter__(self) -> CourtListenerClient:
         return self
 
     async def __aexit__(self, *_: Any) -> None:
@@ -148,7 +149,8 @@ class CourtListenerClient:
         while url and pages_fetched < max_pages:
             async with self._semaphore:
                 try:
-                    resp = await self._client.get(url, params=params if pages_fetched == 0 else None)
+                    page_params = params if pages_fetched == 0 else None
+                    resp = await self._client.get(url, params=page_params)
                     if resp.status_code == 429:
                         wait = 2 ** pages_fetched
                         logger.warning("courtlistener_rate_limited", wait=wait)
@@ -198,8 +200,8 @@ class CourtListenerClient:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         all_opinions: list[PublicLegalOpinion] = []
-        for court_id, result in zip(courts, results):
-            if isinstance(result, Exception):
+        for court_id, result in zip(courts, results, strict=False):
+            if isinstance(result, BaseException):
                 logger.error("courtlistener_court_error", court=court_id, error=str(result))
             else:
                 all_opinions.extend(result)
@@ -254,7 +256,11 @@ class CourtListenerClient:
                 court=court_name,
                 court_level=court_level,
                 case_name=data.get("case_name", "Unknown Case"),
-                docket_number=data.get("docket", {}).get("docket_number", "") if isinstance(data.get("docket"), dict) else "",
+                docket_number=(
+                    data["docket"].get("docket_number", "")
+                    if isinstance(data.get("docket"), dict)
+                    else ""
+                ),
                 date_filed=filed,
                 jurisdiction=jurisdiction,
                 text=text,
@@ -294,7 +300,7 @@ class LawResourceOrgClient:
             follow_redirects=True,
         )
 
-    async def __aenter__(self) -> "LawResourceOrgClient":
+    async def __aenter__(self) -> LawResourceOrgClient:
         return self
 
     async def __aexit__(self, *_: Any) -> None:
@@ -417,7 +423,7 @@ class IndianaCodeClient:
             follow_redirects=True,
         )
 
-    async def __aenter__(self) -> "IndianaCodeClient":
+    async def __aenter__(self) -> IndianaCodeClient:
         return self
 
     async def __aexit__(self, *_: Any) -> None:
@@ -452,9 +458,19 @@ class IndianaCodeClient:
             logger.error("iga_fetch_error", title=title_number, error=str(exc))
             return []
 
-    async def fetch_section(self, title: int, article: int, chapter: int, section: int) -> IndianaStatute | None:
+    async def fetch_section(
+        self,
+        title: int,
+        article: int,
+        chapter: int,
+        section: int,
+    ) -> IndianaStatute | None:
         """Fetch a single Indiana Code section by citation coordinates."""
-        url = f"/api/20231116/mobile-sdk/laws/indiana-code/titles/{title}/articles/{article}/chapters/{chapter}/sections/{section}"
+        url = (
+            f"/api/20231116/mobile-sdk/laws/indiana-code"
+            f"/titles/{title}/articles/{article}"
+            f"/chapters/{chapter}/sections/{section}"
+        )
         try:
             resp = await self._client.get(url)
             resp.raise_for_status()
@@ -560,7 +576,7 @@ def _parse_lro_opinion_html(
         return None
 
     # Try to extract case name from first non-empty lines
-    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     case_name = lines[0] if lines else "Unknown Case"
 
     # Try to extract date
