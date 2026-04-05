@@ -240,7 +240,6 @@ async def test_download_s3_returns_bytes():
 @pytest.mark.asyncio
 async def test_download_http_returns_response_content():
     """_download_http fetches URL and returns resp.content."""
-    import httpx
 
     worker = _make_worker()
 

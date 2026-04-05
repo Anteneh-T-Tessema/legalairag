@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from generation.generator import GenerationResult, LegalGenerator, _FALLBACK
+from generation.generator import _FALLBACK, GenerationResult, LegalGenerator
 from generation.validator import ValidationResult, validate_generated_output
 from retrieval.hybrid_search import SearchResult
 

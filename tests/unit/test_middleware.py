@@ -124,7 +124,8 @@ class TestTokenBucket:
     def test_bucket_refills_after_elapsed_time(self) -> None:
         import time
         from unittest.mock import patch
-        from api.middleware.rate_limit import _TokenBucket, _RATE_LIMIT, _WINDOW_SECONDS
+
+        from api.middleware.rate_limit import _TokenBucket
 
         bucket = _TokenBucket()
         bucket.tokens = 0.0
@@ -151,6 +152,7 @@ class TestRedisConsume:
 
     def test_allowed_under_limit(self) -> None:
         from unittest.mock import MagicMock
+
         import api.middleware.rate_limit as rl_mod
 
         fake_redis = MagicMock()
@@ -168,6 +170,7 @@ class TestRedisConsume:
 
     def test_rate_exceeded_returns_false(self) -> None:
         from unittest.mock import MagicMock
+
         import api.middleware.rate_limit as rl_mod
 
         fake_redis = MagicMock()
@@ -185,6 +188,7 @@ class TestRedisConsume:
 
     def test_expire_called_on_first_request(self) -> None:
         from unittest.mock import MagicMock
+
         import api.middleware.rate_limit as rl_mod
 
         fake_redis = MagicMock()
@@ -202,6 +206,7 @@ class TestRedisConsume:
     def test_expire_called_when_ttl_missing(self) -> None:
         """ttl == -1 means no expiry was set; middleware must fix it."""
         from unittest.mock import MagicMock
+
         import api.middleware.rate_limit as rl_mod
 
         fake_redis = MagicMock()
@@ -220,6 +225,7 @@ class TestRedisConsume:
 
     def test_raises_runtime_error_and_resets_on_exception(self) -> None:
         from unittest.mock import MagicMock
+
         import api.middleware.rate_limit as rl_mod
 
         fake_redis = MagicMock()
@@ -246,8 +252,9 @@ class TestRateLimitProductionDispatch:
 
     def test_rate_limit_headers_present_when_allowed(self) -> None:
         """In production mode with available tokens, X-RateLimit-* headers are added."""
-        import api.middleware.rate_limit as rl_mod
         from unittest.mock import patch
+
+        import api.middleware.rate_limit as rl_mod
 
         original_env = rl_mod.settings.app_env
         rl_mod.settings.app_env = "production"
@@ -266,8 +273,9 @@ class TestRateLimitProductionDispatch:
 
     def test_returns_429_when_bucket_exhausted(self) -> None:
         """In production mode, an exhausted token bucket returns 429 with Retry-After."""
-        import api.middleware.rate_limit as rl_mod
         from unittest.mock import patch
+
+        import api.middleware.rate_limit as rl_mod
 
         original_env = rl_mod.settings.app_env
         rl_mod.settings.app_env = "production"
@@ -291,8 +299,9 @@ class TestRateLimitProductionDispatch:
 
     def test_redis_allowed_path_sets_headers(self) -> None:
         """In production mode, a successful Redis consume adds rate-limit headers."""
-        import api.middleware.rate_limit as rl_mod
         from unittest.mock import patch
+
+        import api.middleware.rate_limit as rl_mod
 
         original_env = rl_mod.settings.app_env
         rl_mod.settings.app_env = "production"
