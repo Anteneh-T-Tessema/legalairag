@@ -51,6 +51,28 @@ class Settings(BaseSettings):
     indiana_courts_api_base: str = "https://public.courts.in.gov/api"
     indiana_courts_api_key: str = ""
 
+    # ── Public Legal Sources ─────────────────────────────────────────────────
+    # CourtListener (Free Law Project) — https://www.courtlistener.com/api/
+    courtlistener_api_token: str = ""         # Register free at courtlistener.com
+    courtlistener_api_base: str = "https://www.courtlistener.com/api/rest/v4"
+    courtlistener_max_pages: int = 5          # Max pagination depth per court
+    # law.resource.org Federal Reporter bulk downloads
+    law_resource_base: str = "https://law.resource.org/pub/us/case/reporter"
+    law_resource_indiana_filter: bool = True  # Filter 7th Cir opinions for Indiana
+    # Indiana General Assembly — statutes
+    indiana_iga_api_base: str = "https://iga.in.gov/api/20231116/mobile-sdk"
+
+    # ── Evaluation ────────────────────────────────────────────────────────────
+    eval_dataset_path: str = "tests/data/eval_queries.json"
+    eval_k_values: list[int] = [1, 5, 10]
+
+    # ── Fraud Detection ───────────────────────────────────────────────────────
+    fraud_detection_top_k: int = 50           # Wide net for pattern analysis
+    fraud_burst_filing_threshold: int = 5     # Cases/party/30 days to flag
+
+    # ── Authority Ranking ─────────────────────────────────────────────────────
+    authority_alpha_default: float = 0.30     # Authority blend weight (0=retrieval, 1=authority)
+
     # ── Performance ───────────────────────────────────────────────────────────
     embedding_batch_size: int = 128
     ingestion_worker_concurrency: int = 4

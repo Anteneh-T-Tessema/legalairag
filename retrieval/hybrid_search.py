@@ -32,6 +32,11 @@ class HybridSearcher:
     - BM25           → precise citation / keyword retrieval ("find § 35-42-1-1")
     - RRF fusion    → combines both rank lists without score normalisation issues
 
+    Query-adaptive weighting:
+    - Citation-lookup queries get higher BM25 weight (0.70)
+    - Semantic queries get higher vector weight (bm25_weight=0.30)
+    - Default: balanced (bm25_weight=0.50)
+
     The BM25 index is built in-memory over retrieved vector candidates for
     efficiency; a full-corpus BM25 index lives in OpenSearch (see opensearch.py).
     """
@@ -55,9 +60,15 @@ class HybridSearcher:
         jurisdiction: str | None = None,
         case_type: str | None = None,
         top_k: int | None = None,
+        bm25_weight: float = 0.5,
     ) -> list[SearchResult]:
+        """
+        Parameters
+        ----------
+        bm25_weight:  0.0 = pure vector, 1.0 = pure BM25.
+                      Use ParsedQuery.bm25_weight for adaptive retrieval.
+        """
         k = top_k or self._top_k
-        # Over-fetch candidates for RRF (typically 4× final k)
         candidate_n = min(k * 4, settings.rerank_top_k)
 
         dense_results = await self._vector_search(
@@ -67,12 +78,15 @@ class HybridSearcher:
             case_type=case_type,
         )
         sparse_results = self._bm25_search(dense_results, query_text, n=candidate_n)
-        fused = self._reciprocal_rank_fusion(dense_results, sparse_results, k=k)
+        fused = self._reciprocal_rank_fusion(
+            dense_results, sparse_results, k=k, bm25_weight=bm25_weight
+        )
 
         logger.info(
             "hybrid_search",
             dense_candidates=len(dense_results),
             fused_results=len(fused),
+            bm25_weight=bm25_weight,
             query_preview=query_text[:80],
         )
         return fused
@@ -154,24 +168,27 @@ class HybridSearcher:
         dense: list[SearchResult],
         sparse: list[SearchResult],
         k: int,
+        bm25_weight: float = 0.5,
     ) -> list[SearchResult]:
         """
-        RRF score = Σ 1 / (rrf_k + rank_i)
-        Combines dense and sparse rank lists; returns top-k by fused score.
+        Weighted RRF: score = (1-w)*dense_rrf + w*sparse_rrf
+
+        bm25_weight=0.0 → pure vector (semantic queries)
+        bm25_weight=1.0 → pure BM25  (citation-lookup queries)
+        bm25_weight=0.5 → balanced   (default)
         """
+        dense_weight = 1.0 - bm25_weight
         rrf_scores: dict[str, float] = {}
         chunk_map: dict[str, SearchResult] = {}
 
         for rank, result in enumerate(dense, start=1):
-            rrf_scores[result.chunk_id] = rrf_scores.get(result.chunk_id, 0) + 1 / (
-                self._rrf_k + rank
-            )
+            contrib = dense_weight / (self._rrf_k + rank)
+            rrf_scores[result.chunk_id] = rrf_scores.get(result.chunk_id, 0) + contrib
             chunk_map[result.chunk_id] = result
 
         for rank, result in enumerate(sparse, start=1):
-            rrf_scores[result.chunk_id] = rrf_scores.get(result.chunk_id, 0) + 1 / (
-                self._rrf_k + rank
-            )
+            contrib = bm25_weight / (self._rrf_k + rank)
+            rrf_scores[result.chunk_id] = rrf_scores.get(result.chunk_id, 0) + contrib
             chunk_map[result.chunk_id] = result
 
         sorted_ids = sorted(rrf_scores, key=lambda cid: rrf_scores[cid], reverse=True)

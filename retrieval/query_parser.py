@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from config.logging import get_logger
 
@@ -41,6 +41,41 @@ _CITATION_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Query type classification signals
+# "citation_lookup" → exact statutory/case reference → favor BM25
+# "semantic" → conceptual question → favor dense vector
+# "hybrid" → both signals present
+_CITATION_LOOKUP_SIGNALS = re.compile(
+    r"""
+    (?:
+        Ind(?:iana)?\.?\s*Code\s*§\s*[\d\-\.]+   # Indiana Code citation
+        | I\.C\.\s*§\s*[\d\-\.]+                  # I.C. § citation
+        | \d+\s+(?:F\.|Ind\.|N\.E\.)\s*\d+        # Reporter citation
+        | [A-Z][a-z]+\s+v\.\s+[A-Z][a-z]+         # Case name (v.)
+        | §\s*[\d\-\.]+                             # Bare § reference
+    )
+    """,
+    re.VERBOSE | re.IGNORECASE,
+)
+_SEMANTIC_SIGNALS = re.compile(
+    r"\b(?:what|how|why|when|explain|define|describe|analyze|summarize|is\s+it)\b",
+    re.IGNORECASE,
+)
+
+
+@dataclass
+class ParsedQuery:
+    raw: str
+    normalized: str
+    jurisdiction: str | None
+    case_type: str | None
+    citations_mentioned: list[str]
+    keywords: list[str]
+    query_type: str = "hybrid"         # "citation_lookup" | "semantic" | "hybrid"
+    bm25_weight: float = 0.5           # Suggested BM25 weight for RRF (0=all vector, 1=all BM25)
+    authority_alpha: float = 0.30      # Suggested authority blend alpha
+    temporal_filter: bool = False      # Whether to apply temporal validity filter
+
 
 @dataclass
 class ParsedQuery:
@@ -58,7 +93,8 @@ def parse_legal_query(query: str) -> ParsedQuery:
     - jurisdiction / county mentions
     - case type hints
     - explicit statutory citations pasted inline
-    - general keywords for BM25
+    - query type classification (citation_lookup vs semantic)
+    - adaptive weights for BM25 / vector / authority blending
 
     This pre-processing step improves both retrieval precision and
     the downstream prompt construction for grounded generation.
@@ -70,6 +106,8 @@ def parse_legal_query(query: str) -> ParsedQuery:
     citations = _CITATION_RE.findall(query)
     keywords = _extract_keywords(query)
     normalized = _normalize_query(query)
+    query_type, bm25_weight, authority_alpha = _classify_query(query)
+    temporal_filter = _needs_temporal_filter(lower)
 
     parsed = ParsedQuery(
         raw=query,
@@ -78,6 +116,10 @@ def parse_legal_query(query: str) -> ParsedQuery:
         case_type=case_type,
         citations_mentioned=[c.strip() for c in citations],
         keywords=keywords,
+        query_type=query_type,
+        bm25_weight=bm25_weight,
+        authority_alpha=authority_alpha,
+        temporal_filter=temporal_filter,
     )
 
     logger.debug(
@@ -85,8 +127,46 @@ def parse_legal_query(query: str) -> ParsedQuery:
         jurisdiction=jurisdiction,
         case_type=case_type,
         citations=citations,
+        query_type=query_type,
+        bm25_weight=bm25_weight,
     )
     return parsed
+
+
+def _classify_query(query: str) -> tuple[str, float, float]:
+    """
+    Classify query and return (query_type, bm25_weight, authority_alpha).
+
+    Citation lookups:
+        BM25 weight=0.70 — exact keyword match matters most.
+        Authority alpha=0.35 — court level matters for citation questions.
+
+    Semantic queries:
+        BM25 weight=0.30 — conceptual similarity is primary.
+        Authority alpha=0.25 — relevance matters more than court level.
+
+    Hybrid (default):
+        BM25 weight=0.50
+        Authority alpha=0.30
+    """
+    has_citation = bool(_CITATION_LOOKUP_SIGNALS.search(query))
+    has_semantic = bool(_SEMANTIC_SIGNALS.search(query))
+
+    if has_citation and not has_semantic:
+        return "citation_lookup", 0.70, 0.35
+    if has_semantic and not has_citation:
+        return "semantic", 0.30, 0.25
+    return "hybrid", 0.50, 0.30
+
+
+def _needs_temporal_filter(lower: str) -> bool:
+    """Heuristic: does the query imply interest in *current* law?"""
+    current_signals = {
+        "current", "current law", "currently", "now", "today",
+        "still valid", "still in effect", "still applies",
+        "effective", "in force",
+    }
+    return any(sig in lower for sig in current_signals)
 
 
 def _detect_jurisdiction(lower: str) -> str | None:

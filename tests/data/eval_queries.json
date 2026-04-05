@@ -1,0 +1,86 @@
+{
+  "version": "1.0",
+  "description": "Indiana Legal RAG evaluation dataset — labelled queries for offline metric computation (Recall@K, MRR, NDCG, faithfulness). Expand with real retrieved source_ids after first ingestion run.",
+  "examples": [
+    {
+      "query_id": "ind-criminal-001",
+      "query": "What is the mens rea required for murder under Indiana Code 35-42-1-1?",
+      "jurisdiction": "indiana",
+      "case_type": "criminal",
+      "relevant_source_ids": [],
+      "graded_relevance": {},
+      "expected_citations": ["I.C. § 35-42-1-1"],
+      "notes": "Statute lookup — expect citation_lookup query type, high BM25 weight"
+    },
+    {
+      "query_id": "ind-criminal-002",
+      "query": "Indiana Supreme Court cases on accomplice liability after 2015",
+      "jurisdiction": "indiana",
+      "case_type": "criminal",
+      "relevant_source_ids": [],
+      "graded_relevance": {},
+      "expected_citations": [],
+      "notes": "Semantic temporal query — expect temporal_filter=True"
+    },
+    {
+      "query_id": "ind-civil-001",
+      "query": "What are the elements of negligence in Indiana tort law?",
+      "jurisdiction": "indiana",
+      "case_type": "civil",
+      "relevant_source_ids": [],
+      "graded_relevance": {},
+      "expected_citations": [],
+      "notes": "Pure semantic query — expect low BM25 weight"
+    },
+    {
+      "query_id": "ind-property-001",
+      "query": "Is a quitclaim deed valid without consideration in Indiana?",
+      "jurisdiction": "indiana",
+      "case_type": "property",
+      "relevant_source_ids": [],
+      "graded_relevance": {},
+      "expected_citations": [],
+      "notes": "Semantic + statute blend"
+    },
+    {
+      "query_id": "7cir-001",
+      "query": "7th Circuit standard of review for summary judgment under Rule 56",
+      "jurisdiction": "federal",
+      "case_type": "civil",
+      "relevant_source_ids": [],
+      "graded_relevance": {},
+      "expected_citations": ["Fed. R. Civ. P. 56"],
+      "notes": "Federal procedure query; should surface 7th Circuit opinions"
+    },
+    {
+      "query_id": "ind-family-001",
+      "query": "Indiana child custody best interests of the child standard I.C. 31-17-2-8",
+      "jurisdiction": "indiana",
+      "case_type": "family",
+      "relevant_source_ids": [],
+      "graded_relevance": {},
+      "expected_citations": ["I.C. § 31-17-2-8"],
+      "notes": "Statute lookup with section citation — citation_lookup query type"
+    },
+    {
+      "query_id": "ind-criminal-003",
+      "query": "Define battery under Indiana law and compare to assault",
+      "jurisdiction": "indiana",
+      "case_type": "criminal",
+      "relevant_source_ids": [],
+      "graded_relevance": {},
+      "expected_citations": ["I.C. § 35-42-2-1"],
+      "notes": "Comparative definition — semantic query"
+    },
+    {
+      "query_id": "ind-tax-001",
+      "query": "Indiana Tax Court on property tax assessment exempt nonprofit organizations",
+      "jurisdiction": "indiana",
+      "case_type": "tax",
+      "relevant_source_ids": [],
+      "graded_relevance": {},
+      "expected_citations": [],
+      "notes": "Indiana Tax Court specific — should prefer indctapp/indtc sources"
+    }
+  ]
+}
