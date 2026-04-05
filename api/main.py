@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 
 from api.middleware.audit_log import AuditLogMiddleware
+from api.middleware.metrics import MetricsMiddleware, format_prometheus, get_metrics
 from api.middleware.rate_limit import RateLimitMiddleware
 from api.middleware.security_headers import SecurityHeadersMiddleware
 from api.routers import documents, search
@@ -27,6 +29,7 @@ app = FastAPI(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(AuditLogMiddleware)
+app.add_middleware(MetricsMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -44,9 +47,21 @@ app.include_router(documents.router, prefix="/api/v1")
 app.include_router(fraud_router, prefix="/api/v1")
 
 
-# ── Health ────────────────────────────────────────────────────────────────────
+# ── Health & Observability ────────────────────────────────────────────────────
 
 
 @app.get("/health", tags=["ops"])
 async def health() -> dict[str, str]:
     return {"status": "ok", "env": settings.app_env}
+
+
+@app.get("/metrics", tags=["ops"], response_class=PlainTextResponse)
+async def metrics() -> str:
+    """Prometheus-compatible metrics endpoint."""
+    return format_prometheus()
+
+
+@app.get("/metrics/json", tags=["ops"])
+async def metrics_json() -> dict:
+    """JSON metrics for dashboards and monitoring."""
+    return get_metrics()

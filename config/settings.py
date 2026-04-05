@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # ── Rate Limiting ────────────────────────────────────────────────────────
     rate_limit_per_minute: int = 60
 
+    # ── Secrets (SSM / Secrets Manager paths for production) ─────────────────
+    ssm_prefix: str = ""  # e.g. "/indyleg/prod" — set to enable SSM lookups
+
     # ── AWS ──────────────────────────────────────────────────────────────────
     aws_region: str = "us-east-1"
     aws_account_id: str = ""
@@ -83,4 +86,36 @@ class Settings(BaseSettings):
     retrieval_top_k: int = 5
 
 
-settings = Settings()
+def _resolve_production_secrets(s: Settings) -> Settings:
+    """Overlay SSM Parameter Store values onto settings in non-dev environments."""
+    if s.app_env == "development" or not s.ssm_prefix:
+        return s
+
+    from config.secrets import resolve_secret
+
+    prefix = s.ssm_prefix.rstrip("/")
+
+    # Database URL
+    db_url = resolve_secret(f"{prefix}/database_url", fallback="")
+    if db_url:
+        s.database_url = db_url
+
+    # API secret key
+    api_key = resolve_secret(f"{prefix}/api_secret_key", fallback="")
+    if api_key:
+        s.api_secret_key = SecretStr(api_key)
+
+    # Indiana Courts API key
+    courts_key = resolve_secret(f"{prefix}/indiana_courts_api_key", fallback="")
+    if courts_key:
+        s.indiana_courts_api_key = courts_key
+
+    # CourtListener token
+    cl_token = resolve_secret(f"{prefix}/courtlistener_api_token", fallback="")
+    if cl_token:
+        s.courtlistener_api_token = cl_token
+
+    return s
+
+
+settings = _resolve_production_secrets(Settings())
