@@ -42,6 +42,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "43",
+            "case_type": "Criminal",
         },
     },
     {
@@ -61,6 +62,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "43",
+            "case_type": "Criminal",
         },
     },
     {
@@ -80,6 +82,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "50",
+            "case_type": "Criminal",
         },
     },
     {
@@ -98,6 +101,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "43",
+            "case_type": "Criminal",
         },
     },
     {
@@ -117,6 +121,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "43",
+            "case_type": "Criminal",
         },
     },
     {
@@ -136,6 +141,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "43",
+            "case_type": "Criminal",
         },
     },
     {
@@ -155,6 +161,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "43",
+            "case_type": "Criminal",
         },
     },
     {
@@ -174,6 +181,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "32", "article": "31",
+            "case_type": "Civil",
         },
     },
     {
@@ -193,6 +201,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "32", "article": "31",
+            "case_type": "Civil",
         },
     },
     {
@@ -212,6 +221,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "9", "article": "30",
+            "case_type": "Criminal",
         },
     },
     {
@@ -232,6 +242,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "31", "article": "17",
+            "case_type": "Family",
         },
     },
     {
@@ -252,6 +263,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "31", "article": "15",
+            "case_type": "Family",
         },
     },
     # ── Tax evasion / tax fraud ───────────────────────────────────────────────
@@ -273,6 +285,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "6", "article": "8.1",
+            "case_type": "Criminal",
         },
     },
     {
@@ -294,6 +307,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "6", "article": "8.1",
+            "case_type": "Criminal",
         },
     },
     {
@@ -316,6 +330,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "6", "article": "8.1",
+            "case_type": "Criminal",
         },
     },
     {
@@ -337,6 +352,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "6", "article": "8.1",
+            "case_type": "Criminal",
         },
     },
     {
@@ -358,6 +374,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "6", "article": "8.1",
+            "case_type": "Criminal",
         },
     },
     {
@@ -378,6 +395,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "6", "article": "3",
+            "case_type": "Tax",
         },
     },
     # ── Homicide (IC 35-42-1) ─────────────────────────────────────────────────
@@ -405,6 +423,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "42",
+            "case_type": "Criminal",
         },
     },
     {
@@ -426,6 +445,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "42",
+            "case_type": "Criminal",
         },
     },
     {
@@ -449,6 +469,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "42",
+            "case_type": "Criminal",
         },
     },
     {
@@ -469,6 +490,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "42",
+            "case_type": "Criminal",
         },
     },
     {
@@ -490,6 +512,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "42",
+            "case_type": "Criminal",
         },
     },
     {
@@ -512,6 +535,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "50",
+            "case_type": "Criminal",
         },
     },
     # ── Self-Defense / Castle Doctrine (IC 35-41-3-2) ────────────────────────
@@ -535,6 +559,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "41",
+            "case_type": "Criminal",
         },
     },
     {
@@ -558,6 +583,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "41",
+            "case_type": "Criminal",
         },
     },
     # ── Battery (IC 35-42-2-1) ────────────────────────────────────────────────
@@ -587,6 +613,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "42",
+            "case_type": "Criminal",
         },
     },
     {
@@ -613,6 +640,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "42",
+            "case_type": "Criminal",
         },
     },
     # ── Felony Sentencing Table (IC 35-50-2) ──────────────────────────────────
@@ -640,6 +668,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "50",
+            "case_type": "Criminal",
         },
     },
     {
@@ -661,6 +690,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "50",
+            "case_type": "Criminal",
         },
     },
     {
@@ -680,6 +710,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "50",
+            "case_type": "Criminal",
         },
     },
     {
@@ -700,6 +731,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "50",
+            "case_type": "Criminal",
         },
     },
     {
@@ -721,6 +753,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "50",
+            "case_type": "Criminal",
         },
     },
     {
@@ -745,6 +778,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "50",
+            "case_type": "Criminal",
         },
     },
     # ── Habitual Offender & Sentencing Factors ────────────────────────────────
@@ -769,6 +803,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "50",
+            "case_type": "Criminal",
         },
     },
     {
@@ -794,6 +829,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "38",
+            "case_type": "Criminal",
         },
     },
     # ── Drug Offenses (IC 35-48-4) ────────────────────────────────────────────
@@ -821,6 +857,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "48",
+            "case_type": "Criminal",
         },
     },
     {
@@ -848,6 +885,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "48",
+            "case_type": "Criminal",
         },
     },
     {
@@ -872,6 +910,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "48",
+            "case_type": "Criminal",
         },
     },
     {
@@ -894,6 +933,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "48",
+            "case_type": "Criminal",
         },
     },
     # ── OWI Expanded (IC 9-30-5) ──────────────────────────────────────────────
@@ -919,6 +959,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "9", "article": "30",
+            "case_type": "Criminal",
         },
     },
     {
@@ -941,6 +982,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "9", "article": "30",
+            "case_type": "Criminal",
         },
     },
     {
@@ -964,6 +1006,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "9", "article": "30",
+            "case_type": "Criminal",
         },
     },
     {
@@ -987,6 +1030,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "9", "article": "30",
+            "case_type": "Criminal",
         },
     },
     # ── Robbery (IC 35-42-5-1) ────────────────────────────────────────────────
@@ -1013,6 +1057,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "42",
+            "case_type": "Criminal",
         },
     },
     # ── Rape / Sex Offenses ───────────────────────────────────────────────────
@@ -1039,6 +1084,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "42",
+            "case_type": "Criminal",
         },
     },
     {
@@ -1064,6 +1110,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "11", "article": "8",
+            "case_type": "Criminal",
         },
     },
     # ── Family Law: Child Support & Custody ───────────────────────────────────
@@ -1090,6 +1137,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "31", "article": "16",
+            "case_type": "Family",
         },
     },
     {
@@ -1117,6 +1165,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "31", "article": "16",
+            "case_type": "Family",
         },
     },
     {
@@ -1142,6 +1191,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "31", "article": "14",
+            "case_type": "Family",
         },
     },
     {
@@ -1167,6 +1217,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "31", "article": "17",
+            "case_type": "Family",
         },
     },
     {
@@ -1191,6 +1242,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "31", "article": "17",
+            "case_type": "Family",
         },
     },
     # ── Civil Law: Tort & Contract ────────────────────────────────────────────
@@ -1216,6 +1268,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "34", "article": "11",
+            "case_type": "Civil",
         },
     },
     {
@@ -1239,6 +1292,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "34", "article": "11",
+            "case_type": "Civil",
         },
     },
     {
@@ -1264,6 +1318,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "34", "article": "51",
+            "case_type": "Civil",
         },
     },
     {
@@ -1290,6 +1345,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "34", "article": "18",
+            "case_type": "Civil",
         },
     },
     {
@@ -1316,6 +1372,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "34", "article": "13",
+            "case_type": "Civil",
         },
     },
     # ── Employment Law ────────────────────────────────────────────────────────
@@ -1341,6 +1398,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "22", "article": "2",
+            "case_type": "Civil",
         },
     },
     {
@@ -1366,6 +1424,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "22", "article": "3",
+            "case_type": "Civil",
         },
     },
     {
@@ -1391,6 +1450,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "22", "article": "3",
+            "case_type": "Civil",
         },
     },
     {
@@ -1417,6 +1477,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "22", "article": "9",
+            "case_type": "Civil",
         },
     },
     # ── Property & Landlord-Tenant ────────────────────────────────────────────
@@ -1444,6 +1505,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "32", "article": "31",
+            "case_type": "Civil",
         },
     },
     {
@@ -1468,6 +1530,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "32", "article": "31",
+            "case_type": "Civil",
         },
     },
     {
@@ -1493,6 +1556,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "6", "article": "1.1",
+            "case_type": "Tax",
         },
     },
     # ── Indiana Constitutional Rights ─────────────────────────────────────────
@@ -1619,6 +1683,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "38",
+            "case_type": "Criminal",
         },
     },
     {
@@ -1646,6 +1711,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "38",
+            "case_type": "Criminal",
         },
     },
     {
@@ -1672,6 +1738,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "38",
+            "case_type": "Criminal",
         },
     },
     {
@@ -1699,6 +1766,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "38",
+            "case_type": "Criminal",
         },
     },
     {
@@ -1729,6 +1797,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "38",
+            "case_type": "Criminal",
         },
     },
     {
@@ -1759,6 +1828,7 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "38",
+            "case_type": "Criminal",
         },
     },
     {
@@ -1790,6 +1860,414 @@ CHUNKS = [
         "metadata": {
             "court": "indiana", "jurisdiction": "Indiana",
             "type": "statute", "title": "35", "article": "38",
+            "case_type": "Criminal",
+        },
+    },
+    # ── IC 29-1 — Probate / Estate Law ──────────────────────────────────────
+    {
+        "chunk_id": "ic-29-1-2-1-001",
+        "source_id": "indiana-code-29-1",
+        "section": "IC 29-1-2-1",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 29-1-2-1 — Intestate succession: share of surviving spouse. "
+            "When a person dies without a valid will, their estate passes by intestate "
+            "succession. The surviving spouse's share depends on who else survives: "
+            "(1) Spouse and children who are children of both the decedent and the spouse — "
+            "spouse takes one-half; children share the other half equally. "
+            "(2) Spouse and children who are NOT all children of the surviving spouse — "
+            "spouse takes one-quarter; the remaining three-quarters goes to the children. "
+            "(3) Spouse and no children or issue — spouse takes the entire estate. "
+            "(4) No surviving spouse — entire estate passes to the decedent's children "
+            "equally, or by right of representation to their descendants if a child is deceased."
+        ),
+        "citations": ["IC 29-1-2-1"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "29", "article": "1",
+            "case_type": "Probate",
+        },
+    },
+    {
+        "chunk_id": "ic-29-1-2-3-001",
+        "source_id": "indiana-code-29-1",
+        "section": "IC 29-1-2-3",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 29-1-2-3 — Intestate succession: collateral heirs. "
+            "If no spouse or children survive, the decedent's estate passes in order to: "
+            "(1) parents of the decedent in equal shares; "
+            "(2) brothers and sisters of the decedent and the descendants of deceased "
+            "brothers and sisters by right of representation; "
+            "(3) grandparents, then aunts and uncles if both grandparents are deceased; "
+            "(4) more remote kindred as determined by the degree of kinship. "
+            "If no kindred can be located within a reasonable time, the estate escheats "
+            "to the State of Indiana (IC 32-34-1). "
+            "Right of representation means a deceased heir's share passes to their living "
+            "descendants, divided equally among them."
+        ),
+        "citations": ["IC 29-1-2-3", "IC 32-34-1"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "29", "article": "1",
+            "case_type": "Probate",
+        },
+    },
+    {
+        "chunk_id": "ic-29-1-7-1-001",
+        "source_id": "indiana-code-29-1",
+        "section": "IC 29-1-7-1",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 29-1-7-1 — Requirements for a valid will. "
+            "A will is valid in Indiana only if it is: "
+            "(1) in writing (typed or handwritten); "
+            "(2) signed by the testator, or signed by another person in the testator's "
+            "conscious presence and at their express direction; "
+            "(3) attested and subscribed in the presence of the testator by at least "
+            "two (2) competent witnesses who witness the testator's signing or "
+            "acknowledgment. Witnesses should be disinterested — a beneficiary who "
+            "also witnesses may be forced to choose between their bequest and their "
+            "witness role (interested witness rule). A will that does not meet these "
+            "requirements is void. Indiana does NOT recognize holographic (handwritten "
+            "but unwitnessed) wills made within the state, though foreign holographic "
+            "wills may be recognized under comity."
+        ),
+        "citations": ["IC 29-1-7-1", "IC 29-1-7-2"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "29", "article": "1",
+            "case_type": "Probate",
+        },
+    },
+    {
+        "chunk_id": "ic-29-1-7-17-001",
+        "source_id": "indiana-code-29-1",
+        "section": "IC 29-1-7-17",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 29-1-7-17 — Will contest: time limit. "
+            "An action to contest the validity of a will admitted to probate must be "
+            "filed within five (5) months from the date the will is admitted to probate "
+            "in an Indiana court. This is a statute of limitations — once the five-month "
+            "period expires, the right to contest the will is permanently barred, even "
+            "if grounds for contest (such as undue influence, fraud, or lack of testamentary "
+            "capacity) later become known. "
+            "Grounds to contest a will include: lack of testamentary capacity (testator "
+            "did not understand the nature of a will, their property, or their heirs), "
+            "undue influence, fraud, forgery, or that the will was revoked prior to death. "
+            "Interested parties who may contest include heirs at law and prior-will beneficiaries."
+        ),
+        "citations": ["IC 29-1-7-17"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "29", "article": "1",
+            "case_type": "Probate",
+        },
+    },
+    {
+        "chunk_id": "ic-29-1-10-1-001",
+        "source_id": "indiana-code-29-1",
+        "section": "IC 29-1-10-1",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 29-1-10-1 — Personal representative: appointment and duties. "
+            "A personal representative (executor/administrator) is appointed by the probate "
+            "court to administer the decedent's estate. Their duties include: "
+            "(1) File an inventory of estate assets with the court within two (2) months "
+            "of appointment; "
+            "(2) Notify creditors by publication for three (3) consecutive weeks in a "
+            "local newspaper; creditors have nine (9) months from death or three (3) months "
+            "from notice to file claims, whichever is later; "
+            "(3) Pay valid debts, taxes (including federal estate tax if the estate exceeds "
+            "the federal exemption threshold), and administration expenses; "
+            "(4) Distribute remaining assets to beneficiaries per the will or intestate law; "
+            "(5) File a final accounting with the court and petition for discharge. "
+            "The personal representative has a fiduciary duty to all beneficiaries and "
+            "creditors. Breach of fiduciary duty may result in personal liability."
+        ),
+        "citations": ["IC 29-1-10-1", "IC 29-1-14-1", "IC 29-1-16-1"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "29", "article": "1",
+            "case_type": "Probate",
+        },
+    },
+    {
+        "chunk_id": "ic-29-1-4-1-001",
+        "source_id": "indiana-code-29-1",
+        "section": "IC 29-1-4-1",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 29-1-4-1 — Surviving spouse and children: exempt property allowance. "
+            "The surviving spouse of a decedent, or the decedent's children if there is no "
+            "surviving spouse, are entitled to receive from the estate exempt property with "
+            "a total value of up to $25,000 (the exempt property allowance). "
+            "This allowance has priority over unsecured debts of the estate — meaning it is "
+            "paid before general creditors are satisfied. If the estate has insufficient "
+            "assets to pay the allowance in full, all available assets go to the surviving "
+            "spouse or children to the extent of the allowance. The allowance is in addition "
+            "to any share the surviving spouse or children receive under the will or by "
+            "intestate succession. Property that qualifies includes household goods, "
+            "furniture, automobiles, and personal effects."
+        ),
+        "citations": ["IC 29-1-4-1"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "29", "article": "1",
+            "case_type": "Probate",
+        },
+    },
+    # ── IC 33-28-3 — Small Claims Court ─────────────────────────────────────
+    {
+        "chunk_id": "ic-33-28-3-2-001",
+        "source_id": "indiana-code-33-28-3",
+        "section": "IC 33-28-3-2",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 33-28-3 — Small Claims Court: overview and informal procedure. "
+            "Indiana's small claims courts are divisions of the circuit, superior, and "
+            "township courts designed to provide a quick, informal, and inexpensive forum "
+            "for resolving minor civil disputes. "
+            "Key features: (1) Relaxed evidence rules — the judge may question parties "
+            "and witnesses directly to develop the facts; (2) Parties may represent "
+            "themselves without an attorney; (3) Proceedings are not recorded verbatim "
+            "as a rule; (4) Equitable claims (injunctions, title to real property) are "
+            "NOT within small claims jurisdiction; (5) Small claims judgments are just "
+            "as enforceable as any other civil judgment — through wage garnishment, bank "
+            "levies, and judgment liens on real estate. "
+            "Small claims is ideal for: landlord-tenant disputes (security deposits), "
+            "unpaid loans between individuals, minor property damage, and unpaid services."
+        ),
+        "citations": ["IC 33-28-3-2"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "33", "article": "28",
+            "case_type": "Civil",
+        },
+    },
+    {
+        "chunk_id": "ic-33-28-3-4-001",
+        "source_id": "indiana-code-33-28-3",
+        "section": "IC 33-28-3-4",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 33-28-3-4 — Small Claims Court: jurisdictional limit. "
+            "Indiana township small claims courts have jurisdiction over civil claims "
+            "where the amount in controversy does not exceed $8,000, exclusive of "
+            "interest and costs. "
+            "City and town courts may have a higher limit of up to $10,000 depending "
+            "on their enabling statute. "
+            "If your claim exceeds the applicable limit, you must file in the circuit "
+            "or superior court (general civil division). You may voluntarily reduce your "
+            "claim to bring it within the small claims limit, but you permanently waive "
+            "the excess amount. "
+            "Claims that cannot be heard in small claims court regardless of amount: "
+            "title to real property, foreclosure of any lien, injunctions, class actions, "
+            "and claims against the government requiring sovereign immunity analysis."
+        ),
+        "citations": ["IC 33-28-3-4"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "33", "article": "28",
+            "case_type": "Civil",
+        },
+    },
+    {
+        "chunk_id": "ic-33-28-3-5-001",
+        "source_id": "indiana-code-33-28-3",
+        "section": "IC 33-28-3-5",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 33-28-3-5 — Small Claims Court: filing and service. "
+            "To start a small claims case in Indiana: "
+            "(1) Obtain a Notice of Claim form from the small claims clerk; "
+            "(2) Complete the form stating the defendant's name and address, the basis "
+            "of the claim (what happened), and the amount demanded; "
+            "(3) File with the clerk and pay the filing fee (varies by court, "
+            "typically $35–$95 for claims under $1,500 and up to $120 for larger claims); "
+            "(4) Service of notice: the clerk mails the notice to the defendant by "
+            "certified mail, return receipt requested, and also by first-class mail. "
+            "If certified mail is unclaimed, personal service by a constable or process "
+            "server is required. "
+            "Service must be completed at least ten (10) days before the scheduled hearing. "
+            "If the defendant does not appear, a default judgment may be entered. "
+            "If the plaintiff does not appear, the case is dismissed."
+        ),
+        "citations": ["IC 33-28-3-5", "IC 33-28-3-6"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "33", "article": "28",
+            "case_type": "Civil",
+        },
+    },
+    {
+        "chunk_id": "ic-33-28-3-9-001",
+        "source_id": "indiana-code-33-28-3",
+        "section": "IC 33-28-3-9",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 33-28-3-9 — Small Claims Court: judgment and appeal. "
+            "After the small claims hearing, the court enters a judgment for or against "
+            "the plaintiff. The judgment specifies the amount awarded plus court costs. "
+            "Collecting the judgment: the winner (judgment creditor) may collect by: "
+            "(1) wage garnishment — garnish up to 25% of the defendant's disposable earnings; "
+            "(2) bank account levy — freeze and seize funds in the defendant's bank accounts; "
+            "(3) judgment lien — file in the county recorder's office, which attaches to all "
+            "real property the defendant owns in that county. "
+            "Appeal: either party may appeal the small claims judgment to the circuit or "
+            "superior court within thirty (30) days of the judgment. The appeal is a de novo "
+            "trial — an entirely new hearing before a judge, not a review of the small claims "
+            "judgment. The appealing party must pay a new, higher filing fee. "
+            "A judgment not appealed within 30 days is final and may be enforced immediately."
+        ),
+        "citations": ["IC 33-28-3-9", "IC 34-25-3-1"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "33", "article": "28",
+            "case_type": "Civil",
+        },
+    },
+    # ── IC 34-26-5 — Protective Orders (Domestic Violence) ──────────────────
+    {
+        "chunk_id": "ic-34-26-5-2-001",
+        "source_id": "indiana-code-34-26-5",
+        "section": "IC 34-26-5-2",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 34-26-5-2 — Protective orders: who may petition. "
+            "The following persons may petition a court for a protective order: "
+            "(1) A person who is or has been a victim of domestic violence committed "
+            "by a family or household member; "
+            "(2) A person who is or has been the victim of stalking or a sex offense; "
+            "(3) A parent or guardian petitioning on behalf of a minor. "
+            "\"Family or household member\" is broadly defined and includes: current or "
+            "former spouses, persons who have a child in common, persons related by "
+            "blood or marriage (including step-relationships), persons who currently "
+            "live together or previously lived together, and persons who are or were "
+            "in a dating relationship (including same-sex relationships). "
+            "Protective orders under IC 34-26-5 are civil in nature. A no-contact order "
+            "issued as part of a criminal case is separate and governed by IC 35-33-8-3.6."
+        ),
+        "citations": ["IC 34-26-5-2", "IC 34-26-5-1"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "34", "article": "26",
+            "case_type": "Family",
+        },
+    },
+    {
+        "chunk_id": "ic-34-26-5-9-001",
+        "source_id": "indiana-code-34-26-5",
+        "section": "IC 34-26-5-9",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 34-26-5-9 — Ex parte protective order. "
+            "A court may issue a protective order on an ex parte basis — without prior "
+            "notice to the respondent — when the petition and supporting information "
+            "demonstrate that immediate and irreparable injury, loss, or damage will "
+            "result if the respondent is notified before the order is entered. "
+            "Procedure: (1) The petitioner files a sworn petition the same day; "
+            "(2) The judge reviews the petition without a hearing, often within hours; "
+            "(3) If granted, the ex parte order is immediately effective upon issuance; "
+            "(4) The respondent is served with the order and notice of a full hearing. "
+            "A full hearing must be scheduled within thirty (30) days of the ex parte order. "
+            "At the full hearing, both parties may present evidence. The ex parte order "
+            "remains in effect until the full hearing or until the court modifies it. "
+            "Ex parte orders are available without the respondent's attorney present "
+            "specifically because requiring notice could endanger the petitioner."
+        ),
+        "citations": ["IC 34-26-5-9", "IC 34-26-5-10"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "34", "article": "26",
+            "case_type": "Family",
+        },
+    },
+    {
+        "chunk_id": "ic-34-26-5-3-001",
+        "source_id": "indiana-code-34-26-5",
+        "section": "IC 34-26-5-3",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 34-26-5-3 — Protective order: scope and provisions. "
+            "An Indiana protective order may include any or all of the following: "
+            "(1) Prohibit the respondent from threatening, harassing, contacting, or "
+            "communicating with the petitioner directly or indirectly; "
+            "(2) Order the respondent to vacate a shared residence (even if the respondent "
+            "owns or is on the lease); "
+            "(3) Prohibit the respondent from entering the petitioner's residence, workplace, "
+            "school, or any place specified in the order; "
+            "(4) Order the respondent to stay at least a specified distance (commonly "
+            "500 feet to 1,000 feet) from the petitioner at all times; "
+            "(5) Award temporary custody of minor children to the petitioner; "
+            "(6) Order temporary child support during the period of the order; "
+            "(7) Order the respondent to participate in counseling or batterer's "
+            "intervention programs. "
+            "A protective order is effective statewide and must be honored by all Indiana "
+            "law enforcement agencies (IC 34-26-5-19). Orders entered in other states are "
+            "recognized and enforceable in Indiana under the Violence Against Women Act."
+        ),
+        "citations": ["IC 34-26-5-3", "IC 34-26-5-19"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "34", "article": "26",
+            "case_type": "Family",
+        },
+    },
+    {
+        "chunk_id": "ic-34-26-5-14-001",
+        "source_id": "indiana-code-34-26-5",
+        "section": "IC 34-26-5-14",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 34-26-5-14 — Protective order: firearms surrender. "
+            "When a court issues a protective order under IC 34-26-5, it must order the "
+            "respondent to surrender all firearms, ammunition, and deadly weapons. "
+            "The respondent must surrender them to a law enforcement agency or a federally "
+            "licensed firearms dealer within 24 hours of service of the order. "
+            "The respondent must file a receipt with the court within 48 hours confirming "
+            "the surrender. Failure to surrender firearms as required is a Level 6 felony. "
+            "Federal law independently prohibits any person subject to a qualifying "
+            "domestic violence protective order from possessing firearms or ammunition "
+            "(18 U.S.C. § 922(g)(8)). This federal prohibition applies regardless of "
+            "whether the state order specifically requires surrender. "
+            "Surrendered firearms are held by law enforcement during the period the "
+            "protective order is in effect and returned if the order expires or is vacated."
+        ),
+        "citations": ["IC 34-26-5-14", "IC 34-26-5-15"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "34", "article": "26",
+            "case_type": "Family",
+        },
+    },
+    {
+        "chunk_id": "ic-34-26-5-15-001",
+        "source_id": "indiana-code-34-26-5",
+        "section": "IC 34-26-5-15",
+        "section_idx": 0,
+        "content": (
+            "Indiana Code § 34-26-5-15 — Violation of a protective order: criminal penalties. "
+            "A person who knowingly or intentionally violates a protective order issued "
+            "under IC 34-26-5 commits a criminal offense: "
+            "(1) Class A misdemeanor: first violation, no physical contact or prior convictions. "
+            "(2) Level 6 felony: (a) the respondent has a prior unrelated conviction for "
+            "a protective order violation within the preceding five years; or (b) the "
+            "violation was committed in the physical presence of a child under 16 years of age. "
+            "(3) Level 5 felony: the violation results in bodily injury to the protected person. "
+            "(4) Level 2 felony: the violation results in serious bodily injury or death. "
+            "Law enforcement must arrest a person for a protective order violation if there "
+            "is probable cause to believe the violation occurred, even if no warrant exists "
+            "(IC 34-26-5-16 mandatory arrest provision). "
+            "Contempt of court is an additional remedy — the respondent may be jailed for "
+            "civil contempt regardless of the criminal charge."
+        ),
+        "citations": ["IC 34-26-5-15", "IC 34-26-5-16"],
+        "metadata": {
+            "court": "indiana", "jurisdiction": "Indiana",
+            "type": "statute", "title": "34", "article": "26",
+            "case_type": "Family",
         },
     },
 ]
