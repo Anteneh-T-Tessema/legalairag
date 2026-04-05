@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from fastapi.testclient import TestClient
 
 from api.main import app
@@ -90,3 +91,218 @@ class TestRateLimiterRedisReset:
 
         # Cleanup
         rl_mod._redis = None
+
+
+class TestTokenBucket:
+    """Verify _TokenBucket in-memory refill and consume logic."""
+
+    def test_fresh_bucket_allows_consume(self) -> None:
+        from api.middleware.rate_limit import _TokenBucket
+
+        bucket = _TokenBucket()
+        allowed, remaining = bucket.consume()
+        assert allowed is True
+        assert remaining >= 0
+
+    def test_bucket_returns_false_when_empty(self) -> None:
+        from api.middleware.rate_limit import _TokenBucket
+
+        bucket = _TokenBucket()
+        bucket.tokens = 0.0
+        allowed, remaining = bucket.consume()
+        assert allowed is False
+        assert remaining == 0
+
+    def test_tokens_decrease_on_successive_consumes(self) -> None:
+        from api.middleware.rate_limit import _TokenBucket
+
+        bucket = _TokenBucket()
+        _, r1 = bucket.consume()
+        _, r2 = bucket.consume()
+        assert r2 <= r1
+
+    def test_bucket_refills_after_elapsed_time(self) -> None:
+        import time
+        from unittest.mock import patch
+        from api.middleware.rate_limit import _TokenBucket, _RATE_LIMIT, _WINDOW_SECONDS
+
+        bucket = _TokenBucket()
+        bucket.tokens = 0.0
+        frozen_start = time.monotonic()
+        bucket.last_refill = frozen_start
+
+        # Mock 30 s elapsed — should refill half the rate limit worth of tokens
+        with patch("api.middleware.rate_limit.time") as mock_time:
+            mock_time.monotonic.return_value = frozen_start + 30.0
+            allowed, _ = bucket.consume()
+
+        assert allowed is True  # refill should have granted at least one token
+
+    def test_consume_returns_int_remaining(self) -> None:
+        from api.middleware.rate_limit import _TokenBucket
+
+        bucket = _TokenBucket()
+        allowed, remaining = bucket.consume()
+        assert isinstance(remaining, int)
+
+
+class TestRedisConsume:
+    """Direct unit tests for _redis_consume without a live Redis server."""
+
+    def test_allowed_under_limit(self) -> None:
+        from unittest.mock import MagicMock
+        import api.middleware.rate_limit as rl_mod
+
+        fake_redis = MagicMock()
+        fake_redis.incr.return_value = 5
+        fake_redis.expire.return_value = True
+        fake_redis.ttl.return_value = 55
+        rl_mod._redis = fake_redis
+
+        try:
+            allowed, remaining = rl_mod._redis_consume("10.0.0.1")
+            assert allowed is True
+            assert remaining == rl_mod._RATE_LIMIT - 5
+        finally:
+            rl_mod._redis = None
+
+    def test_rate_exceeded_returns_false(self) -> None:
+        from unittest.mock import MagicMock
+        import api.middleware.rate_limit as rl_mod
+
+        fake_redis = MagicMock()
+        fake_redis.incr.return_value = rl_mod._RATE_LIMIT + 10
+        fake_redis.expire.return_value = True
+        fake_redis.ttl.return_value = 30
+        rl_mod._redis = fake_redis
+
+        try:
+            allowed, remaining = rl_mod._redis_consume("10.0.0.2")
+            assert allowed is False
+            assert remaining == 0
+        finally:
+            rl_mod._redis = None
+
+    def test_expire_called_on_first_request(self) -> None:
+        from unittest.mock import MagicMock
+        import api.middleware.rate_limit as rl_mod
+
+        fake_redis = MagicMock()
+        fake_redis.incr.return_value = 1  # first request → current == 1
+        fake_redis.expire.return_value = True
+        fake_redis.ttl.return_value = 60
+        rl_mod._redis = fake_redis
+
+        try:
+            rl_mod._redis_consume("10.0.0.3")
+            fake_redis.expire.assert_called()
+        finally:
+            rl_mod._redis = None
+
+    def test_expire_called_when_ttl_missing(self) -> None:
+        """ttl == -1 means no expiry was set; middleware must fix it."""
+        from unittest.mock import MagicMock
+        import api.middleware.rate_limit as rl_mod
+
+        fake_redis = MagicMock()
+        fake_redis.incr.return_value = 2
+        fake_redis.expire.return_value = True
+        fake_redis.ttl.return_value = -1  # missing TTL
+        rl_mod._redis = fake_redis
+
+        try:
+            rl_mod._redis_consume("10.0.0.4")
+            # expire must be called twice: first for incr==1 path is skipped,
+            # but the ttl==-1 guard fires
+            fake_redis.expire.assert_called()
+        finally:
+            rl_mod._redis = None
+
+    def test_raises_runtime_error_and_resets_on_exception(self) -> None:
+        from unittest.mock import MagicMock
+        import api.middleware.rate_limit as rl_mod
+
+        fake_redis = MagicMock()
+        fake_redis.incr.side_effect = OSError("connection lost")
+        rl_mod._redis = fake_redis
+
+        with pytest.raises(RuntimeError, match="redis error"):
+            rl_mod._redis_consume("10.0.0.5")
+
+        assert rl_mod._redis is None
+
+    def test_raises_no_redis_when_redis_url_not_configured(self) -> None:
+        """When no redis_url is set, _get_redis returns None → RuntimeError('no redis')."""
+        import api.middleware.rate_limit as rl_mod
+
+        rl_mod._redis = None  # ensure no cached client
+        # In test env, settings.redis_url is "" so _get_redis() returns None
+        with pytest.raises(RuntimeError, match="no redis"):
+            rl_mod._redis_consume("10.0.0.6")
+
+
+class TestRateLimitProductionDispatch:
+    """Test RateLimitMiddleware.dispatch() in production mode (non-development)."""
+
+    def test_rate_limit_headers_present_when_allowed(self) -> None:
+        """In production mode with available tokens, X-RateLimit-* headers are added."""
+        import api.middleware.rate_limit as rl_mod
+        from unittest.mock import patch
+
+        original_env = rl_mod.settings.app_env
+        rl_mod.settings.app_env = "production"
+        try:
+            # Redis unavailable → falls back to in-memory bucket (full tokens)
+            rl_mod._buckets.clear()
+            with patch(
+                "api.middleware.rate_limit._redis_consume",
+                side_effect=RuntimeError("no redis"),
+            ):
+                resp = client.get("/health")
+            assert "X-RateLimit-Limit" in resp.headers
+            assert "X-RateLimit-Remaining" in resp.headers
+        finally:
+            rl_mod.settings.app_env = original_env
+
+    def test_returns_429_when_bucket_exhausted(self) -> None:
+        """In production mode, an exhausted token bucket returns 429 with Retry-After."""
+        import api.middleware.rate_limit as rl_mod
+        from unittest.mock import patch
+
+        original_env = rl_mod.settings.app_env
+        rl_mod.settings.app_env = "production"
+        try:
+            exhausted = rl_mod._TokenBucket()
+            exhausted.tokens = 0.0
+
+            with (
+                patch(
+                    "api.middleware.rate_limit._redis_consume",
+                    side_effect=RuntimeError("no redis"),
+                ),
+                patch.dict(rl_mod._buckets, {"testclient": exhausted}),
+            ):
+                resp = client.get("/health")
+
+            assert resp.status_code == 429
+            assert "Retry-After" in resp.headers
+        finally:
+            rl_mod.settings.app_env = original_env
+
+    def test_redis_allowed_path_sets_headers(self) -> None:
+        """In production mode, a successful Redis consume adds rate-limit headers."""
+        import api.middleware.rate_limit as rl_mod
+        from unittest.mock import patch
+
+        original_env = rl_mod.settings.app_env
+        rl_mod.settings.app_env = "production"
+        try:
+            with patch(
+                "api.middleware.rate_limit._redis_consume",
+                return_value=(True, 55),
+            ):
+                resp = client.get("/health")
+
+            assert resp.headers.get("X-RateLimit-Remaining") == "55"
+        finally:
+            rl_mod.settings.app_env = original_env

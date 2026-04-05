@@ -248,7 +248,7 @@ class HybridSearcher:
         scores = bm25.get_scores(query.lower().split())
 
         ranked = sorted(
-            zip(candidates, scores, strict=False),
+            zip(candidates, scores),
             key=lambda x: x[1],
             reverse=True,
         )

@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
+
 from retrieval.hybrid_search import HybridSearcher, SearchResult
 from retrieval.query_parser import parse_legal_query
 
@@ -246,3 +250,303 @@ class TestKeywordSearchParamOrdering:
         assert params_final[3] == case_type
         assert params_final[4] == n
         assert len(params_final) == 5
+
+
+# ── DB-mocked tests for _vector_search, _keyword_search, search() ─────────────
+
+
+def _make_db_row(
+    chunk_id: str,
+    score: float = 0.85,
+    jurisdiction: str = "Indiana",
+) -> tuple:
+    """Return a row tuple matching the SELECT column order in the SQL queries."""
+    return (
+        chunk_id,
+        f"src-{chunk_id}",
+        f"Statutory content for {chunk_id}.",
+        "SECTION 1",
+        ["Ind. Code § 35-42-1-1"],
+        {"jurisdiction": jurisdiction},
+        score,
+    )
+
+
+def _make_cursor_mock(rows: list) -> tuple:
+    """Return (mock_conn, mock_cur) with async context manager setup."""
+    mock_cur = AsyncMock()
+    mock_cur.execute = AsyncMock()
+    mock_cur.fetchall = AsyncMock(return_value=rows)
+
+    cursor_ctx = MagicMock()
+    cursor_ctx.__aenter__ = AsyncMock(return_value=mock_cur)
+    cursor_ctx.__aexit__ = AsyncMock(return_value=None)
+
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value = cursor_ctx
+
+    return mock_conn, mock_cur
+
+
+def _make_searcher_no_conn() -> HybridSearcher:
+    s = HybridSearcher.__new__(HybridSearcher)
+    s._database_url = "postgresql://test:test@localhost/test"
+    s._top_k = 10
+    s._rrf_k = 60
+    s._conn = None
+    return s
+
+
+class TestVectorSearch:
+    """Unit tests for HybridSearcher._vector_search with mocked psycopg connection."""
+
+    @pytest.mark.asyncio
+    async def test_returns_search_results(self) -> None:
+        searcher = _make_searcher_no_conn()
+        rows = [_make_db_row("c1", 0.95), _make_db_row("c2", 0.80)]
+        mock_conn, _ = _make_cursor_mock(rows)
+        searcher._get_conn = AsyncMock(return_value=mock_conn)  # type: ignore[method-assign]
+
+        results = await searcher._vector_search([0.1, 0.2], n=5, jurisdiction=None, case_type=None)
+
+        assert len(results) == 2
+        assert results[0].chunk_id == "c1"
+        assert results[0].score == pytest.approx(0.95)
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_when_no_rows(self) -> None:
+        searcher = _make_searcher_no_conn()
+        mock_conn, _ = _make_cursor_mock([])
+        searcher._get_conn = AsyncMock(return_value=mock_conn)  # type: ignore[method-assign]
+
+        results = await searcher._vector_search([0.1], n=5, jurisdiction=None, case_type=None)
+
+        assert results == []
+
+    @pytest.mark.asyncio
+    async def test_jurisdiction_filter_added_to_params(self) -> None:
+        searcher = _make_searcher_no_conn()
+        rows = [_make_db_row("c1")]
+        mock_conn, mock_cur = _make_cursor_mock(rows)
+        searcher._get_conn = AsyncMock(return_value=mock_conn)  # type: ignore[method-assign]
+
+        await searcher._vector_search([0.1], n=5, jurisdiction="Indiana", case_type=None)
+
+        call_args = mock_cur.execute.call_args[0]
+        params = call_args[1]
+        assert "Indiana" in params
+
+    @pytest.mark.asyncio
+    async def test_case_type_filter_added_to_params(self) -> None:
+        searcher = _make_searcher_no_conn()
+        rows = [_make_db_row("c1")]
+        mock_conn, mock_cur = _make_cursor_mock(rows)
+        searcher._get_conn = AsyncMock(return_value=mock_conn)  # type: ignore[method-assign]
+
+        await searcher._vector_search([0.1], n=5, jurisdiction=None, case_type="Criminal")
+
+        call_args = mock_cur.execute.call_args[0]
+        params = call_args[1]
+        assert "Criminal" in params
+
+    @pytest.mark.asyncio
+    async def test_result_fields_mapped_correctly(self) -> None:
+        searcher = _make_searcher_no_conn()
+        row = _make_db_row("chunk-42", 0.77)
+        mock_conn, _ = _make_cursor_mock([row])
+        searcher._get_conn = AsyncMock(return_value=mock_conn)  # type: ignore[method-assign]
+
+        results = await searcher._vector_search([0.1], n=5, jurisdiction=None, case_type=None)
+
+        r = results[0]
+        assert r.chunk_id == "chunk-42"
+        assert r.source_id == "src-chunk-42"
+        assert r.score == pytest.approx(0.77)
+        assert r.citations == ["Ind. Code § 35-42-1-1"]
+
+
+class TestKeywordSearchDB:
+    """Unit tests for HybridSearcher._keyword_search with mocked psycopg connection."""
+
+    @pytest.mark.asyncio
+    async def test_returns_search_results(self) -> None:
+        searcher = _make_searcher_no_conn()
+        rows = [_make_db_row("k1", 0.70), _make_db_row("k2", 0.55)]
+        mock_conn, _ = _make_cursor_mock(rows)
+        searcher._get_conn = AsyncMock(return_value=mock_conn)  # type: ignore[method-assign]
+
+        results = await searcher._keyword_search(
+            "battery Indiana", n=5, jurisdiction=None, case_type=None
+        )
+
+        assert len(results) == 2
+        assert results[0].chunk_id == "k1"
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_when_no_rows(self) -> None:
+        searcher = _make_searcher_no_conn()
+        mock_conn, _ = _make_cursor_mock([])
+        searcher._get_conn = AsyncMock(return_value=mock_conn)  # type: ignore[method-assign]
+
+        results = await searcher._keyword_search(
+            "obscure term", n=5, jurisdiction=None, case_type=None
+        )
+
+        assert results == []
+
+    @pytest.mark.asyncio
+    async def test_or_expanded_query_in_params(self) -> None:
+        """_keyword_search must pass OR-expanded query for broad WHERE recall."""
+        searcher = _make_searcher_no_conn()
+        mock_conn, mock_cur = _make_cursor_mock([])
+        searcher._get_conn = AsyncMock(return_value=mock_conn)  # type: ignore[method-assign]
+
+        await searcher._keyword_search("murder penalty", n=5, jurisdiction=None, case_type=None)
+
+        call_args = mock_cur.execute.call_args[0]
+        params = call_args[1]
+        # params_final[1] == or_query: OR-expanded WHERE clause
+        assert "murder OR penalty" in params
+
+    @pytest.mark.asyncio
+    async def test_jurisdiction_and_case_type_in_params(self) -> None:
+        searcher = _make_searcher_no_conn()
+        mock_conn, mock_cur = _make_cursor_mock([])
+        searcher._get_conn = AsyncMock(return_value=mock_conn)  # type: ignore[method-assign]
+
+        await searcher._keyword_search(
+            "battery", n=5, jurisdiction="Marion County", case_type="Criminal"
+        )
+
+        call_args = mock_cur.execute.call_args[0]
+        params = call_args[1]
+        assert "Marion County" in params
+        assert "Criminal" in params
+
+
+class TestHybridSearchSearch:
+    """Integration tests for search() using mocked _vector_search and _keyword_search."""
+
+    def _make_results(self, ids: list[str]) -> list[SearchResult]:
+        return [
+            SearchResult(
+                chunk_id=cid,
+                source_id=f"src-{cid}",
+                content=f"Content for {cid}",
+                section="",
+                citations=[],
+                metadata={},
+                score=0.9,
+            )
+            for cid in ids
+        ]
+
+    @pytest.mark.asyncio
+    async def test_search_returns_fused_results(self) -> None:
+        searcher = _make_searcher_no_conn()
+        dense = self._make_results(["d1", "d2", "d3"])
+        keyword = self._make_results(["d1", "k1", "k2"])
+
+        searcher._vector_search = AsyncMock(return_value=dense)  # type: ignore[method-assign]
+        searcher._keyword_search = AsyncMock(return_value=keyword)  # type: ignore[method-assign]
+
+        results = await searcher.search([0.1] * 10, "battery Indiana", top_k=3)
+
+        assert len(results) <= 3
+        result_ids = [r.chunk_id for r in results]
+        # d1 appears in both dense and keyword → highest RRF rank
+        assert "d1" in result_ids
+
+    @pytest.mark.asyncio
+    async def test_search_respects_top_k(self) -> None:
+        searcher = _make_searcher_no_conn()
+        dense = self._make_results(["a", "b", "c", "d", "e"])
+        keyword = self._make_results(["a", "c", "e", "f", "g"])
+
+        searcher._vector_search = AsyncMock(return_value=dense)  # type: ignore[method-assign]
+        searcher._keyword_search = AsyncMock(return_value=keyword)  # type: ignore[method-assign]
+
+        results = await searcher.search([0.1] * 10, "query text", top_k=2)
+
+        assert len(results) <= 2
+
+    @pytest.mark.asyncio
+    async def test_search_empty_results_when_no_candidates(self) -> None:
+        searcher = _make_searcher_no_conn()
+        searcher._vector_search = AsyncMock(return_value=[])  # type: ignore[method-assign]
+        searcher._keyword_search = AsyncMock(return_value=[])  # type: ignore[method-assign]
+
+        results = await searcher.search([0.1] * 10, "query", top_k=5)
+
+        assert results == []
+
+    @pytest.mark.asyncio
+    async def test_search_forwards_jurisdiction_to_subqueries(self) -> None:
+        searcher = _make_searcher_no_conn()
+        searcher._vector_search = AsyncMock(return_value=[])  # type: ignore[method-assign]
+        searcher._keyword_search = AsyncMock(return_value=[])  # type: ignore[method-assign]
+
+        await searcher.search(
+            [0.1] * 10, "query", jurisdiction="Indiana", case_type="Criminal", top_k=5
+        )
+
+        call_kwargs_v = searcher._vector_search.call_args.kwargs
+        assert call_kwargs_v["jurisdiction"] == "Indiana"
+        assert call_kwargs_v["case_type"] == "Criminal"
+
+        call_kwargs_k = searcher._keyword_search.call_args.kwargs
+        assert call_kwargs_k["jurisdiction"] == "Indiana"
+        assert call_kwargs_k["case_type"] == "Criminal"
+
+
+class TestBM25Search:
+    """Unit tests for the static _bm25_search method."""
+
+    def _make_results(self, ids_contents: list[tuple[str, str]]) -> list[SearchResult]:
+        return [
+            SearchResult(
+                chunk_id=cid,
+                source_id=cid,
+                content=content,
+                section="",
+                citations=[],
+                metadata={},
+                score=0.0,
+            )
+            for cid, content in ids_contents
+        ]
+
+    def _searcher(self) -> HybridSearcher:
+        s = HybridSearcher.__new__(HybridSearcher)
+        s._rrf_k = 60
+        return s
+
+    def test_returns_empty_list_for_empty_candidates(self) -> None:
+        searcher = self._searcher()
+        result = searcher._bm25_search([], "battery", n=5)
+        assert result == []
+
+    def test_returns_top_n_results(self) -> None:
+        searcher = self._searcher()
+        candidates = self._make_results(
+            [
+                ("c1", "murder penalty Indiana statute"),
+                ("c2", "battery assault felony"),
+                ("c3", "civil contract damages Indiana"),
+                ("c4", "property tax exemption"),
+                ("c5", "murder homicide mens rea Indiana"),
+            ]
+        )
+        results = searcher._bm25_search(candidates, "murder Indiana", n=3)
+        assert len(results) <= 3
+
+    def test_bm25_ranks_matching_content_higher(self) -> None:
+        searcher = self._searcher()
+        candidates = self._make_results(
+            [
+                ("relevant", "battery assault felony Indiana code"),
+                ("irrelevant", "contract damages property law"),
+            ]
+        )
+        results = searcher._bm25_search(candidates, "battery felony", n=2)
+        assert results[0].chunk_id == "relevant"

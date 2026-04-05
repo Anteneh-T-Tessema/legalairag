@@ -204,3 +204,117 @@ async def test_empty_chunks_calls_upsert_with_empty_list():
         await worker._process(message)
 
     worker._indexer.upsert_batch.assert_awaited_once_with([])
+
+
+# ── Download helpers ──────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_download_s3_calls_get_object_with_correct_bucket_and_key():
+    """_download_s3 parses s3://bucket/key and calls get_object correctly."""
+    worker = _make_worker()
+    fake_body = MagicMock()
+    fake_body.read.return_value = b"pdf content from s3"
+    worker._s3.get_object.return_value = {"Body": fake_body}
+
+    result = await worker._download_s3("s3://my-bucket/legal/documents/statute.pdf")
+
+    worker._s3.get_object.assert_called_once_with(
+        Bucket="my-bucket", Key="legal/documents/statute.pdf"
+    )
+    assert result == b"pdf content from s3"
+
+
+@pytest.mark.asyncio
+async def test_download_s3_returns_bytes():
+    """_download_s3 casts the S3 body to bytes."""
+    worker = _make_worker()
+    fake_body = MagicMock()
+    fake_body.read.return_value = b"\x00\x01\x02binary"
+    worker._s3.get_object.return_value = {"Body": fake_body}
+
+    result = await worker._download_s3("s3://bucket/key.pdf")
+    assert isinstance(result, bytes)
+
+
+@pytest.mark.asyncio
+async def test_download_http_returns_response_content():
+    """_download_http fetches URL and returns resp.content."""
+    import httpx
+
+    worker = _make_worker()
+
+    fake_resp = MagicMock()
+    fake_resp.raise_for_status = MagicMock()
+    fake_resp.content = b"html legal document"
+
+    mock_client = AsyncMock()
+    mock_client.get = AsyncMock(return_value=fake_resp)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with patch("httpx.AsyncClient", return_value=mock_client):
+        result = await worker._download_http("https://iga.in.gov/laws/2024/statute.pdf")
+
+    fake_resp.raise_for_status.assert_called_once()
+    assert result == b"html legal document"
+
+
+@pytest.mark.asyncio
+async def test_download_http_raises_on_bad_status():
+    """_download_http propagates raise_for_status errors."""
+    import httpx
+
+    worker = _make_worker()
+
+    fake_resp = MagicMock()
+    fake_resp.raise_for_status.side_effect = httpx.HTTPStatusError(
+        "404", request=MagicMock(), response=MagicMock()
+    )
+
+    mock_client = AsyncMock()
+    mock_client.get = AsyncMock(return_value=fake_resp)
+    mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+    mock_client.__aexit__ = AsyncMock(return_value=None)
+
+    with patch("httpx.AsyncClient", return_value=mock_client):
+        with pytest.raises(httpx.HTTPStatusError):
+            await worker._download_http("https://example.com/missing.pdf")
+
+
+@pytest.mark.asyncio
+async def test_download_dispatches_to_s3_for_s3_upload_source():
+    """_download routes s3_upload messages to _download_s3."""
+    worker = _make_worker()
+    s3_message = IngestionMessage(
+        source_type="s3_upload",
+        source_id="doc-s3",
+        download_url="s3://bucket/doc.pdf",
+        metadata={},
+    )
+    worker._download_s3 = AsyncMock(return_value=b"s3 bytes")
+    worker._download_http = AsyncMock(return_value=b"http bytes")
+
+    await worker._download(s3_message)
+
+    worker._download_s3.assert_awaited_once_with("s3://bucket/doc.pdf")
+    worker._download_http.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_download_dispatches_to_http_for_non_s3_source():
+    """_download routes non-s3 messages to _download_http."""
+    worker = _make_worker()
+    http_message = IngestionMessage(
+        source_type="indiana_courts",
+        source_id="doc-http",
+        download_url="https://courts.in.gov/doc.pdf",
+        metadata={},
+    )
+    worker._download_s3 = AsyncMock(return_value=b"s3 bytes")
+    worker._download_http = AsyncMock(return_value=b"http bytes")
+
+    await worker._download(http_message)
+
+    worker._download_http.assert_awaited_once_with("https://courts.in.gov/doc.pdf")
+    worker._download_s3.assert_not_awaited()
