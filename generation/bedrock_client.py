@@ -66,7 +66,13 @@ class BedrockLLMClient:
         if stop_sequences:
             kwargs["inferenceConfig"]["stopSequences"] = stop_sequences
 
-        response = self._client.converse(**kwargs)
+        try:
+            response = self._client.converse(**kwargs)
+        except Exception:
+            if settings.app_env == "development":
+                logger.warning("bedrock_llm_unavailable_dev_fallback")
+                return self._dev_fallback(messages)
+            raise
         content = response["output"]["message"]["content"]
         text = "".join(block["text"] for block in content if "text" in block)
 
@@ -77,6 +83,43 @@ class BedrockLLMClient:
             output_tokens=response["usage"]["outputTokens"],
         )
         return text
+
+    @staticmethod
+    def _dev_fallback(messages: list[dict[str, str]]) -> str:
+        """Return a context-aware answer synthesised from the user prompt's context chunks."""
+        user_text = messages[-1]["content"] if messages else ""
+        import re
+
+        # Match the prompt template format: [N] SOURCE: ... | SECTION: ...\nCitations: ...\ncontent
+        blocks = re.findall(
+            r"\[(\d+)\]\s*SOURCE:\s*([^\n|]+)\|\s*SECTION:\s*([^\n]*)\n"
+            r"Citations:\s*([^\n]*)\n(.*?)(?=\n---\n|\nProvide|\Z)",
+            user_text,
+            re.DOTALL,
+        )
+
+        if blocks:
+            parts = []
+            for idx, source_id, section, citations, content in blocks[:6]:
+                content_clean = content.strip()[:400]
+                parts.append(
+                    f"**[{idx}] {section.strip()}** ({source_id.strip()})\n"
+                    f"Citations: {citations.strip()}\n"
+                    f"{content_clean}"
+                )
+            summary = "\n\n---\n\n".join(parts)
+            return (
+                f"**[DEV MODE — no LLM available; showing retrieved context]**\n\n"
+                f"Based on the retrieved documents:\n\n{summary}\n\n"
+                f"*Note: In production, AWS Bedrock Claude would synthesise a "
+                f"citation-grounded legal answer from these sources.*"
+            )
+        return (
+            "**[DEV MODE]** No Bedrock LLM available. "
+            "The retrieval pipeline returned results but generation requires "
+            "AWS Bedrock credentials. Configure real AWS credentials to enable "
+            "full RAG generation."
+        )
 
     def stream(
         self,

@@ -79,7 +79,25 @@ class BedrockEmbedder:
     async def _embed_text(self, text: str) -> list[float]:
         """Wrap synchronous Bedrock call in executor to avoid blocking the event loop."""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(None, self._invoke_sync, text)
+        try:
+            return await loop.run_in_executor(None, self._invoke_sync, text)
+        except Exception:
+            if settings.app_env == "development":
+                logger.warning("bedrock_unavailable_dev_fallback", text_len=len(text))
+                return self._deterministic_vector(text)
+            raise
+
+    @staticmethod
+    def _deterministic_vector(text: str) -> list[float]:
+        """Hash-based deterministic pseudo-embedding for local dev (no Bedrock)."""
+        import hashlib
+        import random as _random
+
+        seed = int(hashlib.sha256(text.encode()).hexdigest(), 16) % (2**32)
+        rng = _random.Random(seed)
+        floats = [rng.gauss(0.0, 1.0) for _ in range(1024)]
+        norm = max(sum(x * x for x in floats) ** 0.5, 1e-9)
+        return [x / norm for x in floats]
 
     def _invoke_sync(self, text: str) -> list[float]:
         import json
