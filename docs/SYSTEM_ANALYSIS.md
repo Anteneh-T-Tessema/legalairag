@@ -256,8 +256,14 @@ graph TB
 ```text
 P1: Ingest Documents
 │
-├─► P1.1: Discover (Indiana Courts API / CourtListener / IGA)
-│         → CourtCase, PublicLegalOpinion, IndianaStatute
+├─► P1.1: Discover
+│         ✅ Active:  public.courts.in.gov API, mycase.in.gov,
+│                     CourtListener, law.resource.org, IGA, E-Filing
+│         🔶 Planned: Odyssey CMS (Tyler), BMV Records, ECRW,
+│                     Protection Order Registry, Court Statistics,
+│                     Tax Warrants, Abstract of Judgment
+│         → CourtCase, PublicLegalOpinion, IndianaStatute,
+│           MyCaseSearchResult, FilingRecord
 │
 ├─► P1.2: Queue (SQS IngestionMessage)
 │         → source_type, source_id, download_url
@@ -318,11 +324,26 @@ P3+P4: Search & Generate
 
 ```mermaid
 graph LR
-    subgraph External Systems
-        ICA[Indiana Courts API<br/>Odyssey/Tyler]
+    subgraph Indiana Courts Ecosystem
+        ICA[public.courts.in.gov<br/>Opinions &amp; Orders]
+        MYC[mycase.in.gov<br/>Public Case Search]
+        EFL[E-Filing Portal<br/>efile.incourts.gov]
         CL[CourtListener<br/>Free Law Project]
         LRO[law.resource.org<br/>7th Circuit bulk]
         IGA[IGA API<br/>Indiana statutes]
+    end
+
+    subgraph Planned Sources
+        ODY[Odyssey CMS<br/>Tyler Technologies]
+        BMV[BMV Records<br/>Driving &amp; License]
+        ECRW[ECRW<br/>Court Record Warehouse]
+        POR[Protection Order<br/>Registry]
+        CSTAT[Court Statistics<br/>Reporting]
+        TAX[Electronic Tax<br/>Warrants]
+        AOJ[Abstract of<br/>Judgment]
+    end
+
+    subgraph AWS Infrastructure
         BED[AWS Bedrock<br/>Claude + Titan]
         S3[AWS S3<br/>Document store]
         SQS[AWS SQS<br/>Message queue]
@@ -341,9 +362,18 @@ graph LR
     end
 
     ICA --> ING
+    MYC --> ING
+    EFL --> ING
     CL --> ING
     LRO --> ING
     IGA --> ING
+    ODY -.-> ING
+    BMV -.-> ING
+    ECRW -.-> ING
+    POR -.-> ING
+    CSTAT -.-> ING
+    TAX -.-> ING
+    AOJ -.-> ING
     ING --> SQS
     ING --> S3
     ING --> RDS
@@ -379,7 +409,7 @@ graph LR
 
 | ID | Assumption | Risk if False |
 |---|---|---|
-| A-01 | Indiana Courts API will remain publicly available | Would need alternative data source |
+| A-01 | Indiana Courts API and mycase.in.gov will remain publicly available | Would need alternative data sources; see INDIANA_COURTS_ECOSYSTEM.md for fallback mapping |
 | A-02 | Court filings are in English and machine-parseable | OCR pipeline would be needed for scanned docs |
 | A-03 | Users have basic legal knowledge to interpret results | Misuse of advisory fraud results |
 | A-04 | Bedrock model quality will remain stable across versions | Answer quality regression |
@@ -393,7 +423,7 @@ graph LR
 |---|---|---|---|
 | LLM hallucination in legal context | Medium | Critical | CitationValidator rejects ungrounded claims; fallback response |
 | Stale case law (overruled precedent) | Medium | High | CitationGraph good-law validation; temporal filtering |
-| API data source unavailability | Low | High | Multiple sources (Courts, CourtListener, IGA); graceful degradation |
+| API data source unavailability | Low | High | 6+ active sources (Courts API, mycase.in.gov, E-Filing, CourtListener, law.resource.org, IGA); graceful degradation; see INDIANA_COURTS_ECOSYSTEM.md |
 | Bedrock throttling at scale | Medium | Medium | Batch embeddings; request queuing; retry with backoff |
 | Fraud false positives causing investigation waste | Medium | Medium | Conservative thresholds; confidence scores; "advisory only" labeling |
 | Token/credential compromise | Low | Critical | Short-lived tokens (60 min); revocation; Redis blacklist |

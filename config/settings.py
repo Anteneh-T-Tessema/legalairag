@@ -54,9 +54,24 @@ class Settings(BaseSettings):
     opensearch_host: str = "https://localhost:9200"
     opensearch_index: str = "indyleg-legal-docs"
 
-    # ── Indiana Courts ────────────────────────────────────────────────────────
+    # ── Indiana Courts Ecosystem ─────────────────────────────────────────────
+    # Odyssey / Tyler public API (public.courts.in.gov)
     indiana_courts_api_base: str = "https://public.courts.in.gov/api"
     indiana_courts_api_key: str = ""
+    # mycase.in.gov — statewide public case search (all 92 counties)
+    mycase_base_url: str = "https://mycase.in.gov"
+    mycase_max_concurrent: int = 3  # Respect rate limits
+    # E-Filing portal (read-only; accepted filings feed Odyssey)
+    efiling_portal_base: str = "https://efile.incourts.gov"
+    # Protection Order Registry
+    protection_order_registry_url: str = "https://www.in.gov/courts/por/"
+    # BMV — requires authorized data-sharing agreement
+    bmv_api_base: str = ""  # Set when MOU is active
+    bmv_api_key: str = ""
+    # ECRW — Electronic Court Record Warehouse (bulk historical)
+    ecrw_api_base: str = ""  # Set when data-sharing agreement is active
+    # Statistics / Caseload Reporting
+    court_statistics_url: str = "https://www.in.gov/courts/research/"
 
     # ── Public Legal Sources ─────────────────────────────────────────────────
     # CourtListener (Free Law Project) — https://www.courtlistener.com/api/
@@ -68,6 +83,8 @@ class Settings(BaseSettings):
     law_resource_indiana_filter: bool = True  # Filter 7th Cir opinions for Indiana
     # Indiana General Assembly — statutes
     indiana_iga_api_base: str = "https://iga.in.gov/api/20231116/mobile-sdk"
+    # Indiana Register — administrative rules and executive orders
+    indiana_register_base: str = "https://www.in.gov/legislative/register/"
 
     # ── Evaluation ────────────────────────────────────────────────────────────
     eval_dataset_path: str = "tests/data/eval_queries.json"

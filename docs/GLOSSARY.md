@@ -14,7 +14,18 @@ Quick reference for legal, AI/ML, and infrastructure terms used throughout the I
 | **Precedent** | A prior court decision that is authoritative for deciding similar future cases. |
 | **Jurisdiction** | The geographic area or subject-matter authority of a court (e.g., Marion County, Indiana Supreme Court). |
 | **Case type** | Classification of a case (CIVIL, CRIMINAL, FAMILY, PROBATE, etc.) used for filtering and metadata. |
-| **Odyssey** | Tyler Technologies' case management system used by Indiana courts; the primary data source for IndyLeg. |
+| **Odyssey** | Tyler Technologies' case management system used by all 92 Indiana counties; the statewide CMS and primary upstream data source for IndyLeg. |
+| **OCT** | **Office of Court Technology** — the Indiana Supreme Court division (led by Mary DePrez) that manages Odyssey, mycase.in.gov, INcite, E-Filing, and all statewide court technology systems. |
+| **mycase.in.gov** | Indiana's public-facing case search portal. Provides party search, case lookup, and recent filings across all 92 counties. A read-only view of Odyssey data. |
+| **INcite** | Indiana Court IT Extranet (mycourts.in.gov) — a restricted portal for court staff. Not accessible to IndyLeg (internal-only). |
+| **E-Filing** | Indiana's mandatory electronic filing system at efile.incourts.gov, powered by Tyler Technologies. All civil filings and many criminal filings are submitted here. |
+| **ECRW** | **Electronic Court Record Warehouse** — a statewide repository of electronic court records maintained by OCT. Access requires a data-sharing agreement with the Indiana Supreme Court. |
+| **BMV** | **Bureau of Motor Vehicles** — Indiana agency providing driving records and license data. Relevant to traffic and criminal cases; access requires a Memorandum of Understanding (MOU). |
+| **Protection Order Registry** | Statewide registry of protective orders maintained by Indiana courts, accessible for public safety purposes. |
+| **Abstract of Judgment** | A court document summarizing the judgment in a case, used for transferring judgment liens and reporting to external agencies. |
+| **PSI** | **Presentence Investigation** — confidential report prepared for sentencing. Protected by IC § 35-38-1-13; excluded from IndyLeg ingestion. |
+| **CDL/CDLIS** | **Commercial Driver's License / Commercial Driver License Information System** — federal reporting system for commercial driver convictions, managed per 49 CFR Part 384. |
+| **Tyler Technologies** | The private company that builds and maintains Odyssey CMS, E-Filing, and related court technology for Indiana (and many other states). |
 | **Good law** | A legal ruling that has not been overturned, reversed, or superseded and is still valid authority. |
 | **Citation chain** | A sequence of cases citing one another, forming a directed graph of legal authority. |
 

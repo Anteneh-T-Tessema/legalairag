@@ -169,3 +169,189 @@ class IndianaCourtClient:
 def _sanitize_case_number(case_number: str) -> str:
     """Strip any characters outside alphanumeric and hyphens to prevent path traversal."""
     return re.sub(r"[^A-Za-z0-9\-]", "", case_number)
+
+
+# ── mycase.in.gov — Statewide public case search ──────────────────────────
+
+_MYCASE_BASE = settings.mycase_base_url.rstrip("/")
+
+# All 92 Indiana counties
+INDIANA_COUNTIES: list[str] = [
+    "Adams", "Allen", "Bartholomew", "Benton", "Blackford", "Boone", "Brown",
+    "Carroll", "Cass", "Clark", "Clay", "Clinton", "Crawford", "Daviess",
+    "Dearborn", "Decatur", "DeKalb", "Delaware", "Dubois", "Elkhart",
+    "Fayette", "Floyd", "Fountain", "Franklin", "Fulton", "Gibson", "Grant",
+    "Greene", "Hamilton", "Hancock", "Harrison", "Hendricks", "Henry",
+    "Howard", "Huntington", "Jackson", "Jasper", "Jay", "Jefferson",
+    "Jennings", "Johnson", "Knox", "Kosciusko", "LaGrange", "Lake",
+    "LaPorte", "Lawrence", "Madison", "Marion", "Marshall", "Martin",
+    "Miami", "Monroe", "Montgomery", "Morgan", "Newton", "Noble", "Ohio",
+    "Orange", "Owen", "Parke", "Perry", "Pike", "Porter", "Posey",
+    "Pulaski", "Putnam", "Randolph", "Ripley", "Rush", "St. Joseph",
+    "Scott", "Shelby", "Spencer", "Starke", "Steuben", "Sullivan",
+    "Switzerland", "Tippecanoe", "Tipton", "Union", "Vanderburgh",
+    "Vermillion", "Vigo", "Wabash", "Warren", "Warrick", "Washington",
+    "Wayne", "Wells", "White", "Whitley",
+]
+
+# Indiana case type codes used across Odyssey / mycase / e-filing
+CASE_TYPE_CODES: dict[str, str] = {
+    "CF": "Criminal Felony",
+    "CM": "Criminal Misdemeanor",
+    "IF": "Infraction",
+    "CT": "Civil Tort",
+    "CC": "Civil Collection",
+    "PL": "Civil Plenary",
+    "SC": "Small Claims",
+    "DR": "Domestic Relations",
+    "JP": "Juvenile — CHINS/TPR",
+    "JD": "Juvenile — Delinquency",
+    "JS": "Juvenile — Status",
+    "GU": "Guardianship",
+    "ES": "Estate",
+    "TR": "Trust",
+    "MH": "Mental Health",
+    "PO": "Protective Order",
+    "AD": "Adoption",
+    "MI": "Miscellaneous",
+    "PC": "Post-Conviction Relief",
+    "EV": "Eviction",
+    "MF": "Mortgage Foreclosure",
+    "XP": "Expungement",
+}
+
+
+@dataclass
+class MyCaseSearchResult:
+    case_number: str
+    case_type: str
+    case_type_code: str
+    court: str
+    county: str
+    filing_date: date
+    parties: list[str]
+    status: str  # "Open", "Closed", "Disposed"
+    judge: str
+    next_hearing: date | None = None
+
+
+class MyCaseClient:
+    """
+    Client for mycase.in.gov — Indiana's statewide public case search portal.
+
+    Provides party-name search, case-number lookup, and recent filings
+    across all 92 Indiana counties. All data is public record.
+
+    Rate-limited to respect server capacity (default 3 concurrent requests).
+    """
+
+    def __init__(
+        self,
+        max_concurrent: int = settings.mycase_max_concurrent,
+        timeout: float = 30.0,
+    ) -> None:
+        self._semaphore = asyncio.Semaphore(max_concurrent)
+        self._client = httpx.AsyncClient(
+            base_url=_MYCASE_BASE,
+            headers={"Accept": "application/json", "User-Agent": "IndyLeg/0.7.0"},
+            timeout=timeout,
+        )
+
+    async def __aenter__(self) -> MyCaseClient:
+        return self
+
+    async def __aexit__(self, *_: Any) -> None:
+        await self._client.aclose()
+
+    async def search_by_party(
+        self,
+        name: str,
+        *,
+        county: str | None = None,
+        case_type_code: str | None = None,
+        page: int = 1,
+        page_size: int = 25,
+    ) -> list[MyCaseSearchResult]:
+        """Search mycase.in.gov by party name across all or a specific county."""
+        params: dict[str, Any] = {
+            "partyName": name.strip(),
+            "page": page,
+            "pageSize": min(page_size, 100),
+        }
+        if county:
+            params["county"] = county
+        if case_type_code and case_type_code in CASE_TYPE_CODES:
+            params["caseType"] = case_type_code
+
+        data = await self._get("/search/party", params=params)
+        return [self._parse_result(item) for item in data.get("results", [])]
+
+    async def search_by_case_number(self, case_number: str) -> MyCaseSearchResult | None:
+        """Look up a specific case by its case number."""
+        sanitized = _sanitize_case_number(case_number)
+        try:
+            data = await self._get(f"/case/{sanitized}")
+            return self._parse_result(data)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                return None
+            raise
+
+    async def recent_filings(
+        self,
+        county: str,
+        *,
+        case_type_code: str | None = None,
+        days_back: int = 7,
+    ) -> list[MyCaseSearchResult]:
+        """Fetch recent filings for a given county (for near-real-time ingestion)."""
+        from datetime import timedelta
+
+        date_from = date.today() - timedelta(days=days_back)
+        params: dict[str, Any] = {
+            "county": county,
+            "dateFrom": date_from.isoformat(),
+            "dateTo": date.today().isoformat(),
+        }
+        if case_type_code and case_type_code in CASE_TYPE_CODES:
+            params["caseType"] = case_type_code
+
+        data = await self._get("/search/recent", params=params)
+        return [self._parse_result(item) for item in data.get("results", [])]
+
+    # ── Internal ──────────────────────────────────────────────────────────────
+
+    async def _get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        async with self._semaphore:
+            for attempt in range(3):
+                try:
+                    resp = await self._client.get(path, params=params)
+                    if resp.status_code == 429:
+                        wait = 2**attempt
+                        logger.warning("mycase_rate_limited", path=path, wait=wait)
+                        await asyncio.sleep(wait)
+                        continue
+                    resp.raise_for_status()
+                    return resp.json()  # type: ignore[return-value]
+                except httpx.HTTPStatusError as exc:
+                    logger.error("mycase_http_error", path=path, status=exc.response.status_code)
+                    raise
+            raise RuntimeError(f"Exhausted retries for mycase {path}")
+
+    @staticmethod
+    def _parse_result(data: dict[str, Any]) -> MyCaseSearchResult:
+        next_hearing = None
+        if data.get("nextHearing"):
+            next_hearing = date.fromisoformat(data["nextHearing"])
+        return MyCaseSearchResult(
+            case_number=data.get("caseNumber", ""),
+            case_type=CASE_TYPE_CODES.get(data.get("caseTypeCode", ""), data.get("caseType", "Unknown")),
+            case_type_code=data.get("caseTypeCode", ""),
+            court=data.get("court", ""),
+            county=data.get("county", ""),
+            filing_date=date.fromisoformat(data.get("filingDate", "1970-01-01")),
+            parties=[p.get("name", "") for p in data.get("parties", [])],
+            status=data.get("caseStatus", "Unknown"),
+            judge=data.get("judge", ""),
+            next_hearing=next_hearing,
+        )

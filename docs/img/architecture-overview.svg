@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 580" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 760" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="13">
   <defs>
     <!-- Card shadow -->
     <filter id="shadow" x="-4%" y="-4%" width="110%" height="112%">
@@ -17,6 +17,9 @@
     <marker id="ah-purple" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
       <path d="M1,1 L7,4 L1,7 Z" fill="#7c3aed"/>
     </marker>
+    <marker id="ah-teal" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+      <path d="M1,1 L7,4 L1,7 Z" fill="#0d9488"/>
+    </marker>
     <!-- Gradient for header bar -->
     <linearGradient id="headerGrad" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#2563eb"/>
@@ -26,7 +29,7 @@
   </defs>
 
   <!-- Background -->
-  <rect width="920" height="580" rx="14" fill="#f8fafc"/>
+  <rect width="960" height="760" rx="14" fill="#f8fafc"/>
   <!-- Subtle top accent bar -->
   <rect width="920" height="4" rx="2" fill="url(#headerGrad)"/>
 
@@ -133,60 +136,186 @@
   <text x="588" y="361" text-anchor="middle" fill="#78716c" font-size="10">run_id traces every answer end-to-end</text>
 
   <!-- ========= Ingestion Layer ========= -->
-  <rect x="30" y="408" width="410" height="140" rx="10" fill="#ffffff" stroke="#a5b4fc" stroke-width="1.2" filter="url(#shadow)"/>
-  <rect x="30" y="408" width="410" height="24" rx="10" fill="#e0e7ff"/>
-  <rect x="30" y="422" width="410" height="10" fill="#e0e7ff"/>
-  <text x="235" y="426" text-anchor="middle" fill="#3730a3" font-weight="700" font-size="12">Ingestion Layer</text>
-  <line x1="44" y1="436" x2="426" y2="436" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="30" y="408" width="690" height="140" rx="10" fill="#ffffff" stroke="#a5b4fc" stroke-width="1.2" filter="url(#shadow)"/>
+  <rect x="30" y="408" width="690" height="24" rx="10" fill="#e0e7ff"/>
+  <rect x="30" y="422" width="690" height="10" fill="#e0e7ff"/>
+  <text x="375" y="426" text-anchor="middle" fill="#3730a3" font-weight="700" font-size="12">Ingestion Pipeline</text>
+  <line x1="44" y1="436" x2="706" y2="436" stroke="#e2e8f0" stroke-width="1"/>
 
-  <rect x="48" y="444" width="72" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
-  <text x="84" y="460" text-anchor="middle" fill="#3730a3" font-size="10">Indiana</text>
-  <text x="84" y="474" text-anchor="middle" fill="#3730a3" font-size="10">Courts API</text>
+  <!-- Source connectors (from ecosystem below) -->
+  <rect x="48" y="444" width="100" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="98" y="460" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">Source</text>
+  <text x="98" y="474" text-anchor="middle" fill="#3730a3" font-size="10">Connectors</text>
 
-  <line x1="120" y1="464" x2="136" y2="464" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="148" y1="464" x2="164" y2="464" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
 
-  <rect x="140" y="444" width="58" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
-  <text x="169" y="460" text-anchor="middle" fill="#3730a3" font-size="10">SQS</text>
-  <text x="169" y="474" text-anchor="middle" fill="#3730a3" font-size="10">+ DLQ</text>
+  <rect x="168" y="444" width="58" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="197" y="460" text-anchor="middle" fill="#3730a3" font-size="10">SQS</text>
+  <text x="197" y="474" text-anchor="middle" fill="#3730a3" font-size="10">+ DLQ</text>
 
-  <line x1="198" y1="464" x2="214" y2="464" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="226" y1="464" x2="242" y2="464" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
 
-  <rect x="218" y="444" width="62" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
-  <text x="249" y="460" text-anchor="middle" fill="#3730a3" font-size="10">Worker</text>
-  <text x="249" y="474" text-anchor="middle" fill="#3730a3" font-size="10">Pool ×4</text>
+  <rect x="246" y="444" width="66" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="279" y="460" text-anchor="middle" fill="#3730a3" font-size="10">Worker</text>
+  <text x="279" y="474" text-anchor="middle" fill="#3730a3" font-size="10">Pool ×4</text>
 
-  <line x1="280" y1="464" x2="296" y2="464" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="312" y1="464" x2="328" y2="464" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
 
-  <rect x="300" y="444" width="62" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
-  <text x="331" y="460" text-anchor="middle" fill="#3730a3" font-size="10">Chunker</text>
-  <text x="331" y="474" text-anchor="middle" fill="#3730a3" font-size="10">+ Embed</text>
+  <rect x="332" y="444" width="76" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="370" y="460" text-anchor="middle" fill="#3730a3" font-size="10">Legal</text>
+  <text x="370" y="474" text-anchor="middle" fill="#3730a3" font-size="10">Chunker</text>
 
-  <line x1="362" y1="464" x2="378" y2="464" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
+  <line x1="408" y1="464" x2="424" y2="464" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
 
-  <rect x="382" y="444" width="40" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
-  <text x="402" y="468" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">S3</text>
+  <rect x="428" y="444" width="76" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="466" y="460" text-anchor="middle" fill="#3730a3" font-size="10">Titan Embed</text>
+  <text x="466" y="474" text-anchor="middle" fill="#3730a3" font-size="10">v2 · 1024d</text>
 
-  <text x="235" y="510" text-anchor="middle" fill="#78716c" font-size="10">512-char sliding window · IC § extraction · section boundaries</text>
-  <text x="235" y="527" text-anchor="middle" fill="#78716c" font-size="10">Titan Embed v2 · batch=128 · dedup via content-hash</text>
+  <line x1="504" y1="464" x2="520" y2="464" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
 
-  <!-- ========= Infra Layer ========= -->
-  <rect x="460" y="408" width="256" height="140" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadow)"/>
-  <rect x="460" y="408" width="256" height="24" rx="10" fill="#f1f5f9"/>
-  <rect x="460" y="422" width="256" height="10" fill="#f1f5f9"/>
-  <text x="588" y="426" text-anchor="middle" fill="#334155" font-weight="700" font-size="12">Infrastructure (AWS CDK)</text>
-  <line x1="474" y1="436" x2="702" y2="436" stroke="#e2e8f0" stroke-width="1"/>
-  <text x="588" y="454" text-anchor="middle" fill="#475569" font-size="10">Aurora PostgreSQL + pgvector</text>
-  <text x="588" y="470" text-anchor="middle" fill="#475569" font-size="10">OpenSearch 2.x (BM25)</text>
-  <text x="588" y="486" text-anchor="middle" fill="#475569" font-size="10">ECS Fargate · ALB · ElastiCache</text>
-  <text x="588" y="502" text-anchor="middle" fill="#475569" font-size="10">CloudWatch · Secrets Manager</text>
-  <text x="588" y="518" text-anchor="middle" fill="#475569" font-size="10">SQS + DLQ · S3 (raw + processed)</text>
+  <rect x="524" y="444" width="72" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="560" y="460" text-anchor="middle" fill="#3730a3" font-size="10">Dedup</text>
+  <text x="560" y="474" text-anchor="middle" fill="#3730a3" font-size="10">SHA-256</text>
+
+  <line x1="596" y1="464" x2="612" y2="464" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#ah)"/>
+
+  <rect x="616" y="444" width="86" height="40" rx="6" fill="#eef2ff" stroke="#a5b4fc" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="659" y="460" text-anchor="middle" fill="#3730a3" font-size="10" font-weight="600">pgvector ·</text>
+  <text x="659" y="474" text-anchor="middle" fill="#3730a3" font-size="10">OpenSearch · S3</text>
+
+  <text x="375" y="510" text-anchor="middle" fill="#78716c" font-size="10">512-char sliding window · IC § extraction · section boundaries · batch=128</text>
+  <text x="375" y="527" text-anchor="middle" fill="#78716c" font-size="10">Content-hash dedup · source allowlist filter · confidentiality guard</text>
+
+  <!-- ========= Indiana Courts Ecosystem (Data Sources) ========= -->
+  <rect x="30" y="570" width="900" height="162" rx="10" fill="#ffffff" stroke="#99f6e4" stroke-width="1.2" filter="url(#shadow)"/>
+  <rect x="30" y="570" width="900" height="24" rx="10" fill="#ccfbf1"/>
+  <rect x="30" y="584" width="900" height="10" fill="#ccfbf1"/>
+  <text x="480" y="588" text-anchor="middle" fill="#0f766e" font-weight="700" font-size="12">Indiana Courts Technology Ecosystem &amp; External Sources</text>
+  <line x1="44" y1="598" x2="916" y2="598" stroke="#e2e8f0" stroke-width="1"/>
+
+  <!-- Active sources row -->
+  <text x="48" y="615" fill="#0d9488" font-size="9" font-weight="700">✅ ACTIVE</text>
+
+  <rect x="110" y="604" width="106" height="32" rx="5" fill="#f0fdfa" stroke="#5eead4" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="163" y="618" text-anchor="middle" fill="#134e4a" font-size="9" font-weight="600">public.courts.in.gov</text>
+  <text x="163" y="630" text-anchor="middle" fill="#0f766e" font-size="8">Odyssey API</text>
+
+  <rect x="222" y="604" width="90" height="32" rx="5" fill="#f0fdfa" stroke="#5eead4" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="267" y="618" text-anchor="middle" fill="#134e4a" font-size="9" font-weight="600">mycase.in.gov</text>
+  <text x="267" y="630" text-anchor="middle" fill="#0f766e" font-size="8">92 counties</text>
+
+  <rect x="318" y="604" width="82" height="32" rx="5" fill="#f0fdfa" stroke="#5eead4" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="359" y="618" text-anchor="middle" fill="#134e4a" font-size="9" font-weight="600">CourtListener</text>
+  <text x="359" y="630" text-anchor="middle" fill="#0f766e" font-size="8">Free Law Project</text>
+
+  <rect x="406" y="604" width="86" height="32" rx="5" fill="#f0fdfa" stroke="#5eead4" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="449" y="618" text-anchor="middle" fill="#134e4a" font-size="9" font-weight="600">law.resource.org</text>
+  <text x="449" y="630" text-anchor="middle" fill="#0f766e" font-size="8">7th Circuit Fed</text>
+
+  <rect x="498" y="604" width="70" height="32" rx="5" fill="#f0fdfa" stroke="#5eead4" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="533" y="618" text-anchor="middle" fill="#134e4a" font-size="9" font-weight="600">IGA</text>
+  <text x="533" y="630" text-anchor="middle" fill="#0f766e" font-size="8">Indiana Code</text>
+
+  <rect x="574" y="604" width="74" height="32" rx="5" fill="#f0fdfa" stroke="#5eead4" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="611" y="618" text-anchor="middle" fill="#134e4a" font-size="9" font-weight="600">E-Filing</text>
+  <text x="611" y="630" text-anchor="middle" fill="#0f766e" font-size="8">Tyler Tech</text>
+
+  <!-- Planned sources row -->
+  <text x="48" y="657" fill="#d97706" font-size="9" font-weight="700">🔶 PLANNED</text>
+
+  <rect x="110" y="644" width="78" height="32" rx="5" fill="#fffbeb" stroke="#fcd34d" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="149" y="658" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Odyssey CMS</text>
+  <text x="149" y="670" text-anchor="middle" fill="#b45309" font-size="8">Case Mgmt</text>
+
+  <rect x="194" y="644" width="82" height="32" rx="5" fill="#fffbeb" stroke="#fcd34d" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="235" y="658" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">BMV Records</text>
+  <text x="235" y="670" text-anchor="middle" fill="#b45309" font-size="8">Vehicle · DL</text>
+
+  <rect x="282" y="644" width="88" height="32" rx="5" fill="#fffbeb" stroke="#fcd34d" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="326" y="658" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Protection Ord.</text>
+  <text x="326" y="670" text-anchor="middle" fill="#b45309" font-size="8">Registry</text>
+
+  <rect x="376" y="644" width="56" height="32" rx="5" fill="#fffbeb" stroke="#fcd34d" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="404" y="658" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">ECRW</text>
+  <text x="404" y="670" text-anchor="middle" fill="#b45309" font-size="8">Historical</text>
+
+  <rect x="438" y="644" width="80" height="32" rx="5" fill="#fffbeb" stroke="#fcd34d" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="478" y="658" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Tax Warrants</text>
+  <text x="478" y="670" text-anchor="middle" fill="#b45309" font-size="8">Electronic</text>
+
+  <rect x="524" y="644" width="86" height="32" rx="5" fill="#fffbeb" stroke="#fcd34d" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="567" y="658" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Court Statistics</text>
+  <text x="567" y="670" text-anchor="middle" fill="#b45309" font-size="8">Caseload Data</text>
+
+  <rect x="616" y="644" width="80" height="32" rx="5" fill="#fffbeb" stroke="#fcd34d" stroke-width="0.8" filter="url(#shadow-sm)"/>
+  <text x="656" y="658" text-anchor="middle" fill="#92400e" font-size="9" font-weight="600">Abstract Judg.</text>
+  <text x="656" y="670" text-anchor="middle" fill="#b45309" font-size="8">Sentencing</text>
+
+  <!-- Future / excluded row -->
+  <text x="48" y="699" fill="#6b7280" font-size="9" font-weight="700">🔮 FUTURE</text>
+
+  <rect x="110" y="686" width="72" height="32" rx="5" fill="#f9fafb" stroke="#d1d5db" stroke-width="0.8"/>
+  <text x="146" y="700" text-anchor="middle" fill="#6b7280" font-size="9">E-Tickets</text>
+  <text x="146" y="712" text-anchor="middle" fill="#9ca3af" font-size="8">Traffic</text>
+
+  <rect x="188" y="686" width="80" height="32" rx="5" fill="#f9fafb" stroke="#d1d5db" stroke-width="0.8"/>
+  <text x="228" y="700" text-anchor="middle" fill="#6b7280" font-size="9">Risk Assess.</text>
+  <text x="228" y="712" text-anchor="middle" fill="#9ca3af" font-size="8">Pretrial</text>
+
+  <rect x="274" y="686" width="90" height="32" rx="5" fill="#f9fafb" stroke="#d1d5db" stroke-width="0.8"/>
+  <text x="319" y="700" text-anchor="middle" fill="#6b7280" font-size="9">Supervised Rel.</text>
+  <text x="319" y="712" text-anchor="middle" fill="#9ca3af" font-size="8">Probation</text>
+
+  <rect x="370" y="686" width="90" height="32" rx="5" fill="#f9fafb" stroke="#d1d5db" stroke-width="0.8"/>
+  <text x="415" y="700" text-anchor="middle" fill="#6b7280" font-size="9">Home Detention</text>
+  <text x="415" y="712" text-anchor="middle" fill="#9ca3af" font-size="8">Reporting</text>
+
+  <rect x="466" y="686" width="80" height="32" rx="5" fill="#f9fafb" stroke="#d1d5db" stroke-width="0.8"/>
+  <text x="506" y="700" text-anchor="middle" fill="#6b7280" font-size="9">CDL Driver</text>
+  <text x="506" y="712" text-anchor="middle" fill="#9ca3af" font-size="8">Convictions</text>
+
+  <text x="570" y="699" fill="#dc2626" font-size="9" font-weight="700">🚫 EXCLUDED</text>
+
+  <rect x="650" y="686" width="52" height="32" rx="5" fill="#fef2f2" stroke="#fca5a5" stroke-width="0.8"/>
+  <text x="676" y="700" text-anchor="middle" fill="#991b1b" font-size="9">PSI</text>
+  <text x="676" y="712" text-anchor="middle" fill="#b91c1c" font-size="8">IC § 35-38</text>
+
+  <rect x="708" y="686" width="62" height="32" rx="5" fill="#fef2f2" stroke="#fca5a5" stroke-width="0.8"/>
+  <text x="739" y="700" text-anchor="middle" fill="#991b1b" font-size="9">Juvenile</text>
+  <text x="739" y="712" text-anchor="middle" fill="#b91c1c" font-size="8">IC § 31-39</text>
+
+  <rect x="776" y="686" width="76" height="32" rx="5" fill="#fef2f2" stroke="#fca5a5" stroke-width="0.8"/>
+  <text x="814" y="700" text-anchor="middle" fill="#991b1b" font-size="9">Mental Health</text>
+  <text x="814" y="712" text-anchor="middle" fill="#b91c1c" font-size="8">HIPAA</text>
+
+  <rect x="858" y="686" width="58" height="32" rx="5" fill="#fef2f2" stroke="#fca5a5" stroke-width="0.8"/>
+  <text x="887" y="700" text-anchor="middle" fill="#991b1b" font-size="9">LexisNexis</text>
+  <text x="887" y="712" text-anchor="middle" fill="#b91c1c" font-size="8">Licensed</text>
+
+  <!-- ========= Infrastructure (right column) ========= -->
+  <rect x="740" y="408" width="190" height="140" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2" filter="url(#shadow)"/>
+  <rect x="740" y="408" width="190" height="24" rx="10" fill="#f1f5f9"/>
+  <rect x="740" y="422" width="190" height="10" fill="#f1f5f9"/>
+  <text x="835" y="426" text-anchor="middle" fill="#334155" font-weight="700" font-size="12">Infrastructure</text>
+  <line x1="754" y1="436" x2="916" y2="436" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="835" y="454" text-anchor="middle" fill="#475569" font-size="10">Aurora PostgreSQL</text>
+  <text x="835" y="470" text-anchor="middle" fill="#475569" font-size="10">+ pgvector (HNSW)</text>
+  <text x="835" y="486" text-anchor="middle" fill="#475569" font-size="10">OpenSearch 2.x (BM25)</text>
+  <text x="835" y="502" text-anchor="middle" fill="#475569" font-size="10">ECS Fargate · ALB</text>
+  <text x="835" y="518" text-anchor="middle" fill="#475569" font-size="10">ElastiCache · SQS · S3</text>
+  <text x="835" y="534" text-anchor="middle" fill="#475569" font-size="10">CloudWatch · CDK</text>
 
   <!-- Vertical connector arrows -->
   <line x1="353" y1="189" x2="235" y2="222" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah)"/>
   <line x1="595" y1="189" x2="588" y2="222" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah)"/>
   <line x1="235" y1="377" x2="235" y2="406" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah)"/>
   <line x1="588" y1="377" x2="588" y2="406" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah)"/>
+  <!-- Ecosystem → Ingestion -->
+  <line x1="375" y1="568" x2="375" y2="550" stroke="#0d9488" stroke-width="1.5" marker-end="url(#ah-teal)"/>
+  <text x="395" y="563" fill="#0d9488" font-size="9" font-weight="600">data feeds</text>
+  <!-- Ingestion → Infrastructure -->
+  <line x1="720" y1="464" x2="738" y2="464" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#ah)"/>
 
   <!-- Footer -->
-  <text x="460" y="568" text-anchor="middle" fill="#94a3b8" font-size="9" letter-spacing="1">v0.6.0 · Python 3.11 · AWS Bedrock · pgvector · OpenSearch</text>
+  <text x="480" y="748" text-anchor="middle" fill="#94a3b8" font-size="9" letter-spacing="1">v0.7.0 · Python 3.11 · AWS Bedrock · pgvector · OpenSearch · Indiana OCT Ecosystem</text>
 </svg>
