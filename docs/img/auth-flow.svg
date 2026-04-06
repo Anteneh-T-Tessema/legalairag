@@ -39,7 +39,7 @@
   <!-- HMAC verify -->
   <rect x="366" y="65" width="100" height="44" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
   <text x="416" y="83" text-anchor="middle" fill="#fcd34d" font-weight="700" font-size="10">HMAC Verify</text>
-  <text x="416" y="97" text-anchor="middle" fill="#92400e" font-size="9">bcrypt · timing-safe</text>
+  <text x="416" y="97" text-anchor="middle" fill="#92400e" font-size="9">HMAC-SHA256 · timing-safe</text>
   <line x1="466" y1="87" x2="490" y2="87" stroke="#22c55e" stroke-width="1.5" marker-end="url(#ar-g)"/>
   <text x="468" y="80" fill="#22c55e" font-size="8">✓</text>
 

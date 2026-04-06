@@ -299,7 +299,7 @@
   <text x="835" y="426" text-anchor="middle" fill="#334155" font-weight="700" font-size="12">Infrastructure</text>
   <line x1="754" y1="436" x2="916" y2="436" stroke="#e2e8f0" stroke-width="1"/>
   <text x="835" y="454" text-anchor="middle" fill="#475569" font-size="10">Aurora PostgreSQL</text>
-  <text x="835" y="470" text-anchor="middle" fill="#475569" font-size="10">+ pgvector (HNSW)</text>
+  <text x="835" y="470" text-anchor="middle" fill="#475569" font-size="10">+ pgvector (IVFFlat)</text>
   <text x="835" y="486" text-anchor="middle" fill="#475569" font-size="10">OpenSearch 2.x (BM25)</text>
   <text x="835" y="502" text-anchor="middle" fill="#475569" font-size="10">ECS Fargate · ALB</text>
   <text x="835" y="518" text-anchor="middle" fill="#475569" font-size="10">ElastiCache · SQS · S3</text>

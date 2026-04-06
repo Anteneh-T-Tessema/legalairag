@@ -74,7 +74,7 @@
   <!-- pgvector -->
   <rect x="688" y="118" width="110" height="48" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
   <text x="743" y="138" text-anchor="middle" fill="#fcd34d" font-weight="700" font-size="10">Aurora pgvector</text>
-  <text x="743" y="153" text-anchor="middle" fill="#92400e" font-size="9">HNSW cosine idx</text>
+  <text x="743" y="153" text-anchor="middle" fill="#92400e" font-size="9">IVFFlat cosine idx</text>
 
   <!-- OpenSearch -->
   <rect x="688" y="176" width="110" height="48" rx="6" fill="#1e293b" stroke="#f59e0b" stroke-width="1.2"/>

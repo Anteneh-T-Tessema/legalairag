@@ -14,6 +14,19 @@ All notable changes to the Indiana Legal RAG Platform are documented here.
 
 ### Documentation (0.7.0)
 
+- **Comprehensive documentation audit** — all 16 docs audited and corrected against source code
+- Version `0.2.0` → `0.7.0` across all docs, `api/main.py`, and `pyproject.toml`
+- `TESTING.md`: complete rewrite (712 tests, 40 files, 100% coverage, UI test section)
+- `SECURITY.md`: `bcrypt` → HMAC-SHA256 password hashing throughout
+- `API.md` / `API_EXAMPLES.md`: correct `/health` response; clarify root-level `/health` and `/metrics` routes
+- `DEPLOYMENT.md` / `RUNBOOK.md`: fix test count (187 → 712), fix health response format
+- `SYSTEM_DESIGN.md`: fix FastAPI version, court authority weights, pipeline step count (7→6)
+- `SYSTEM_ANALYSIS.md` / `AGENT_ARCHITECTURE.md`: pipeline steps 7→6, risk level computation table
+- `FRAUD_DETECTION.md`: risk level logic table now matches `_compute_risk_level()` exactly
+- `CONTRIBUTING.md`: clarify Python 3.11+ requirement (no 3.9 compat)
+- `GLOSSARY.md` / `ARCHITECTURE.md`: HNSW → IVFFlat, pgvector entry updated
+- `README.md`: 5-step → 6-step pipeline, HNSW → IVFFlat schema DDL, health response corrected
+- `DATA_MODEL.md`: fix `chunk_id` ER annotation (TEXT key `{source_id}:chunk:{N}`, not UUID)
 - Updated README test count (141 → 712) and added 100% coverage highlight
 - Expanded test table to cover all 16 test files
 

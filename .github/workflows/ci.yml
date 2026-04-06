@@ -70,7 +70,7 @@ jobs:
           DATABASE_URL: postgresql+psycopg://indyleg:changeme@localhost:5432/indyleg
           APP_ENV: test
           API_SECRET_KEY: test-secret-key-for-ci-000
-        run: pytest tests/unit/ -v --tb=short --cov=. --cov-report=term-missing --cov-fail-under=60
+        run: pytest tests/unit/ -v --tb=short --cov=. --cov-report=term-missing --cov-fail-under=100
 
       - name: Integration tests
         env:
@@ -139,7 +139,7 @@ jobs:
 
       - name: npm audit (JS dependency CVEs)
         working-directory: ui
-        run: npm ci --ignore-scripts && npm audit --audit-level=high || true
+        run: npm ci --ignore-scripts && npm audit --audit-level=high
 
   # ── Docker build smoke test ──────────────────────────────
   docker:
