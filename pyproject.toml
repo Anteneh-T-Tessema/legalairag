@@ -44,7 +44,7 @@ dependencies = [
     "opensearch-py>=2.6,<3.0",
 
     # Async / queues
-    "aioboto3>=13.0,<14.0",
+    "aioboto3>=13.0,<16.0",
     "aio-pika>=9.4,<10.0",
 
     # Auth
