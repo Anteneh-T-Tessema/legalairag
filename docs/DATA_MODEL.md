@@ -21,7 +21,7 @@
 ```mermaid
 erDiagram
     LEGAL_CHUNKS {
-        text chunk_id PK "UUID-based primary key"
+        text chunk_id PK "Text primary key: {source_id}:chunk:{N}"
         text source_id FK "Links to document_versions"
         text section "Section header (e.g., 'Article IV')"
         integer section_idx "Ordinal position in document"
