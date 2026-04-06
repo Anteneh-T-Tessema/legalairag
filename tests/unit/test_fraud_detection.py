@@ -444,3 +444,58 @@ async def test_fraud_agent_execute_llm_failure_falls_back():
 
     assert result.summary  # fallback summary should be non-empty
     assert "src-1" in result.flagged_source_ids
+
+
+# ── _detect_burst_filing — missing-data skip branches ─────────────────────────
+
+
+def test_detect_burst_filing_skips_result_with_no_filing_date():
+    """Results with no filing_date metadata are skipped (line 100: if not filed_str or not parties)."""
+    result = _result("no-date", parties=["Corp X"])  # no filing_date → filed_str is ""
+    indicators = _FilingPatternAnalyzer._detect_burst_filing([result])
+    assert not any(i.indicator_type == "burst_filing" for i in indicators)
+
+
+def test_detect_burst_filing_skips_result_with_no_parties():
+    """Results with empty parties list are skipped (line 100: if not filed_str or not parties)."""
+    result = _result("no-parties", filing_date="2024-01-01")  # parties not set
+    indicators = _FilingPatternAnalyzer._detect_burst_filing([result])
+    assert not any(i.indicator_type == "burst_filing" for i in indicators)
+
+
+def test_detect_burst_filing_skips_result_with_invalid_date():
+    """ValueError/TypeError on date.fromisoformat is caught; result is skipped (lines 103-104)."""
+    result = _result("bad-date", parties=["Corp X"], filing_date="not-a-date")
+    indicators = _FilingPatternAnalyzer._detect_burst_filing([result])
+    assert not any(i.indicator_type == "burst_filing" for i in indicators)
+
+
+# ── _detect_identity_reuse — address branch ───────────────────────────────────
+
+
+def test_detect_identity_reuse_address_match_executes_line_162():
+    """Address match in content hits addr_to_cases[m.lower()].append(line 162) without error."""
+    results = [
+        _result(f"addr-{i}", content="Property at 1234 Oak St, Indianapolis, Indiana.")
+        for i in range(3)
+    ]
+    # The address regex matches → line 162 is executed; no indicator generated (addr not used)
+    indicators = _FilingPatternAnalyzer._detect_identity_reuse(results)
+    assert isinstance(indicators, list)
+
+
+# ── _detect_rapid_ownership_transfer — invalid date skip ─────────────────────
+
+
+def test_detect_rapid_transfer_skips_invalid_filing_date():
+    """ValueError/TypeError on date.fromisoformat is caught; result is skipped (lines 297-298)."""
+    results = [
+        _result(
+            f"prop-{i}",
+            content="Property at 999 Main St, Indianapolis, Indiana transferred.",
+            filing_date="bad-date-value",
+        )
+        for i in range(3)
+    ]
+    indicators = _FilingPatternAnalyzer._detect_rapid_ownership_transfer(results)
+    assert not any(i.indicator_type == "rapid_ownership_transfer" for i in indicators)

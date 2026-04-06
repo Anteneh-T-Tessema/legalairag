@@ -6,6 +6,8 @@ import asyncio
 from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
+
 from ingestion.cli import ingest_case, ingest_recent, ingest_search, main
 
 
@@ -202,3 +204,17 @@ class TestMain:
             patch("ingestion.cli.asyncio.run", return_value=1),
         ):
             main()
+
+    def test_no_command_prints_help_and_exits(self):
+        """Running with no subcommand triggers parser.print_help() + sys.exit(1) (lines 163-164)."""
+        from argparse import Namespace
+
+        with (
+            patch(
+                "argparse.ArgumentParser.parse_args",
+                return_value=Namespace(command=None, dry_run=False),
+            ),
+            pytest.raises(SystemExit) as exc_info,
+        ):
+            main()
+        assert exc_info.value.code == 1

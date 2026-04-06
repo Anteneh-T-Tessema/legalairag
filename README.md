@@ -35,7 +35,7 @@
 - [x] **Fraud detection agent** — 5 anomaly detectors with risk scoring and investigation memos. [Docs](docs/FRAUD_DETECTION.md)
 - [x] **Role-based access** — Admin / Attorney / Clerk / Viewer with JWT + Redis token blacklist. [Docs](docs/SECURITY.md)
 - [x] **Production infrastructure** — ECS Fargate, Aurora pgvector, OpenSearch, SQS+DLQ, CloudWatch, ALB. [Docs](docs/DEPLOYMENT.md)
-- [x] **141 tests** — unit, integration, and end-to-end; all passing in CI. [Docs](docs/TESTING.md)
+- [x] **712 tests · 100% coverage** — unit, integration, and end-to-end; all passing in CI. [Docs](docs/TESTING.md)
 - [x] **Evaluation framework** — Recall@K, MRR, NDCG, faithfulness, and citation accuracy metrics. [Docs](docs/SYSTEM_ANALYSIS.md)
 
 > [!TIP]
@@ -1517,17 +1517,26 @@ python -m ingestion.cli recent --county "Marion County" --days 7
 pytest tests/unit/ -v
 ```
 
-**141 tests** across 7 test files covering all subsystems:
+**712 tests** across 20+ test files covering all subsystems with **100% line and branch coverage** (2942 statements, 562 branches):
 
-| Test File | Coverage |
+| Test Area | Coverage |
 |---|---|
 | `test_chunker.py` | Section boundary detection, sliding window overlap, IC § citation extraction, empty input handling |
-| `test_hybrid_search.py` | RRF fusion formula, zero-score handling, score ordering, empty result sets |
+| `test_hybrid_search.py` | RRF fusion, dev/production mode paths, connection caching, dedup loop |
 | `test_generator.py` | Prompt assembly, citation injection, context formatting, Bedrock API mocking |
 | `test_authority.py` | Court hierarchy weight lookup, alpha blending, substring matching, temporal validity filtering |
 | `test_evaluator.py` | Recall@K, Precision@K, MRR, NDCG, citation accuracy, faithfulness scoring, edge cases |
-| `test_fraud_detection.py` | All 5 pattern detectors (burst filing, identity reuse, deed fraud, suspicious entities, rapid ownership), risk level computation, empty-set handling |
+| `test_fraud_detection.py` | All 5 pattern detectors, risk level computation, date edge cases, empty-set handling |
 | `test_worker.py` | Document dedup via content hash, SQS message processing, error handling |
+| `test_ecosystem_clients.py` | All 6 ecosystem connectors — init, optional params, 404/non-404 error paths, success paths |
+| `test_indiana_courts.py` | IndianaCourtClient + MyCaseClient — search, get, download, recent filings, retry logic |
+| `test_public_resource.py` | CourtListener, LRO, IGA clients — gather errors, citation parsing, statute parsing |
+| `test_middleware.py` | HSTS headers, metrics ring buffer, Prometheus formatting, Redis rate limiter init |
+| `test_api_auth.py` | Login, refresh, logout, token blacklist, unknown user edge cases |
+| `test_api_search.py` | Search, ask, agent exception handling |
+| `test_base_agent.py` | Agent orchestration, S3 fallback, tool dispatch |
+| `test_ingestion_init.py` | Lazy-loading `__getattr__` for all 7 exported symbols |
+| `test_cli.py` | Ingest commands, no-command help, error handling |
 
 ### Integration Tests
 
@@ -1946,7 +1955,7 @@ The codebase is released under the **MIT License** — see [LICENSE](LICENSE) fo
 
 ### v0.3.0 — Comprehensive Test Suite
 
-- **141 tests** across unit, integration, and e2e test files — all passing
+- **712 tests** across unit, integration, and e2e test files — 100% coverage, all passing
 - New test files: `test_authority.py`, `test_evaluator.py`, `test_fraud_detection.py`, `test_generator.py`, `test_worker.py`, `test_rag_pipeline.py`
 - Fixed 12 lint issues in `public_resource.py`
 

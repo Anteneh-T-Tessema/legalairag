@@ -2,6 +2,21 @@
 
 All notable changes to the Indiana Legal RAG Platform are documented here.
 
+## [0.7.0] — 2026-04-05
+
+### Tests (0.7.0)
+
+- **100% test coverage** — 712 unit tests, 2942 statements, 562 branches, 0 missed
+- 85 new tests across 12 files pushing coverage from 95.26% → 100%
+- New test file: `test_ingestion_init.py` for lazy-loading `__getattr__` branches
+- Full coverage for ecosystem_clients, indiana_courts, public_resource, hybrid_search, middleware
+- Production-mode code paths now tested (dedup loop, ring buffer eviction, Redis init)
+
+### Documentation (0.7.0)
+
+- Updated README test count (141 → 712) and added 100% coverage highlight
+- Expanded test table to cover all 16 test files
+
 ## [0.6.0] — 2026-04-05
 
 ### Tests (0.6.0)

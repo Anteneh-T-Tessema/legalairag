@@ -78,6 +78,15 @@ class TestLoadHTML:
             doc = load_from_bytes(b"<p>hi</p>", source_id="h", filename="page.htm")
             assert doc.mime_type == "text/html"
 
+    def test_html_extracts_text_via_real_beautifulsoup(self):
+        """Uses real BeautifulSoup + lxml to exercise _normalize_whitespace on line 134."""
+        html = b"<html><body><p>Indiana Code section.</p><script>bad();</script></body></html>"
+        doc = load_from_bytes(html, source_id="html-1", filename="statute.html")
+        assert "Indiana Code section" in doc.raw_text
+        assert "bad()" not in doc.raw_text  # script tag stripped
+        assert doc.mime_type == "text/html"
+        assert doc.pages == [doc.raw_text]
+
 
 # ── load_from_bytes — PDF ─────────────────────────────────────────────────────
 

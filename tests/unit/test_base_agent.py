@@ -152,3 +152,41 @@ class TestWriteAuditLog:
             mock_client.put_object.assert_awaited_once()
         finally:
             del sys.modules["aioboto3"]
+
+    @patch("agents.base_agent.settings")
+    def test_s3_write_exception_falls_back_to_log(self, mock_settings: MagicMock) -> None:
+        """When put_object raises, the except block logs a warning and falls back."""
+        mock_settings.audit_s3_bucket = "my-audit-bucket"
+        agent = _TestAgent()
+        now = datetime.now(tz=timezone.utc)
+        run = AgentRun(
+            run_id="r2",
+            agent_name="TestAgent",
+            input_summary="in",
+            output_summary="out",
+            tool_calls=[],
+            started_at=now,
+            finished_at=now,
+            success=True,
+        )
+        mock_client = AsyncMock()
+        mock_client.put_object.side_effect = Exception("S3 unavailable")
+        mock_ctx = AsyncMock()
+        mock_ctx.__aenter__.return_value = mock_client
+        mock_ctx.__aexit__.return_value = False
+
+        mock_session = MagicMock()
+        mock_session.client.return_value = mock_ctx
+
+        import types
+        import sys
+
+        fake_aioboto3 = types.ModuleType("aioboto3")
+        fake_aioboto3.Session = MagicMock(return_value=mock_session)  # type: ignore[attr-defined]
+
+        sys.modules["aioboto3"] = fake_aioboto3
+        try:
+            # Should not raise — falls back to logger.info after warning
+            _run(agent._write_audit_log(run))
+        finally:
+            del sys.modules["aioboto3"]

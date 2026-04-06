@@ -10,6 +10,7 @@ import pytest
 from ingestion.sources.public_resource import (
     CourtListenerClient,
     IndianaCodeClient,
+    IndianaStatute,
     LawResourceOrgClient,
     PublicLegalOpinion,
     _classify_court_level,
@@ -712,3 +713,224 @@ class TestIndianaCodeClientAsync:
 
         result = await client.fetch_section(35, 42, 2, 1)
         assert result is None
+
+
+# ── CourtListenerClient.fetch_indiana_opinions BaseException logging (line 205) ─
+
+
+class TestCourtListenerFetchIndianaOpinionsError:
+    @pytest.mark.asyncio
+    async def test_fetch_indiana_opinions_logs_error_when_court_raises(self):
+        """One court fetch raises; line 205 logs the error and continues (line 205)."""
+        mock_http = AsyncMock()
+        with patch(
+            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
+        ):
+            client = CourtListenerClient(api_token="")
+        client._client = mock_http
+
+        call_count = 0
+
+        async def fake_fetch_opinions(court_id, *, date_from=None, date_to=None):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise RuntimeError("network error for court")
+            return []
+
+        with patch.object(client, "fetch_opinions", side_effect=fake_fetch_opinions):
+            opinions = await client.fetch_indiana_opinions()
+
+        assert isinstance(opinions, list)  # error was gracefully absorbed
+
+
+# ── CourtListenerClient._parse_opinion citation branch (line 242→239) ──────────
+
+
+class TestParseOpinionCitationBranch:
+    def test_ignores_non_dict_non_str_citation(self):
+        """Citation that is neither dict nor str skips both branches (242→239)."""
+        data = {
+            "id": 99,
+            "plain_text": "Indiana Supreme Court ruled " * 10,
+            "date_filed": "2024-01-01",
+            "citations": [42, None, {"cite": "1 N.E.3d 1"}, "2 N.E.3d 2"],
+            "case_name": "Test v. Test",
+            "docket": {},
+            "cluster": "",
+        }
+        result = CourtListenerClient._parse_opinion(data, "ind", "Indiana Supreme Court")
+        assert result is not None
+        # Only dict and str citations were collected
+        assert "1 N.E.3d 1" in result.citations_out
+        assert "2 N.E.3d 2" in result.citations_out
+
+
+# ── LROClient.fetch_indiana_seventh_circuit_samples missing branches ────────────
+
+
+class TestLROFetchSamplesEdgeCases:
+    def _make_lro_client(self, responses: list) -> LawResourceOrgClient:
+        mock_http = AsyncMock()
+        mock_http.get = AsyncMock(side_effect=responses)
+        with patch(
+            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
+        ):
+            client = LawResourceOrgClient()
+        client._client = mock_http
+        return client
+
+    @pytest.mark.asyncio
+    async def test_skips_empty_html_on_continue(self):
+        """fetch_opinion_html returns '' → if not html: continue (line 353)."""
+        resp_vols = MagicMock()
+        resp_vols.text = '<a href="700/">700</a>'
+        resp_vols.raise_for_status = MagicMock()
+
+        resp_files = MagicMock()
+        resp_files.text = '<a href="case1.html">case1</a>'
+        resp_files.raise_for_status = MagicMock()
+
+        # fetch_opinion_html will call self._client.get which raises HTTPError → returns ""
+        import httpx
+
+        client = self._make_lro_client([resp_vols, resp_files])
+        # Override fetch_opinion_html to return empty string
+        client._client.get = AsyncMock(return_value=resp_vols)
+
+        with patch.object(
+            client, "fetch_opinion_html", new=AsyncMock(return_value="")
+        ):
+            with patch.object(
+                client, "_list_opinion_files", new=AsyncMock(return_value=["case1.html"])
+            ):
+                with patch.object(
+                    client, "list_volumes", new=AsyncMock(return_value=["700"])
+                ):
+                    opinions = await client.fetch_indiana_seventh_circuit_samples(
+                        max_volumes=1, opinions_per_volume=1
+                    )
+        assert opinions == []
+
+    @pytest.mark.asyncio
+    async def test_skips_when_opinion_parse_returns_none(self):
+        """_parse_lro_opinion_html returns None → if opinion: skip (line 360→350)."""
+        short_html = "<p>Too short.</p>"  # will return None from _parse_lro_opinion_html
+
+        with patch.object(
+            LawResourceOrgClient,
+            "fetch_opinion_html",
+            new=AsyncMock(return_value=short_html),
+        ):
+            with patch.object(
+                LawResourceOrgClient,
+                "_list_opinion_files",
+                new=AsyncMock(return_value=["case1.html"]),
+            ):
+                with patch.object(
+                    LawResourceOrgClient,
+                    "list_volumes",
+                    new=AsyncMock(return_value=["700"]),
+                ):
+                    mock_http = AsyncMock()
+                    with patch(
+                        "ingestion.sources.public_resource.httpx.AsyncClient",
+                        return_value=mock_http,
+                    ):
+                        client = LawResourceOrgClient()
+                    client._client = mock_http
+                    opinions = await client.fetch_indiana_seventh_circuit_samples(
+                        max_volumes=1, opinions_per_volume=1
+                    )
+        assert opinions == []
+
+
+# ── IndianaStatute.source_id property (line 404) ────────────────────────────
+
+
+class TestIndianaStatuteSourceId:
+    def test_source_id_returns_statute_id(self):
+        """IndianaStatute.source_id property returns statute_id (line 404)."""
+        statute = IndianaStatute(
+            statute_id="ic-35-42-1-1",
+            title="35",
+            full_citation="Ind. Code § 35-42-1-1",
+            subject="Murder",
+            article="42",
+            chapter="1",
+            section_text="A person who...",
+            effective_date=None,
+            url="https://iga.in.gov/laws/indiana-code/title/35/article/42/chapter/1/section/1",
+        )
+        assert statute.source_id == "ic-35-42-1-1"
+
+
+# ── IndianaCodeClient._parse_statute ValueError + None paths (lines 453→446, 506) ─
+
+
+class TestParseStatuteMissingBranches:
+    def test_invalid_effective_date_is_ignored(self):
+        """effectiveDate that fails fromisoformat → ValueError caught → pass (line 506)."""
+        data = {
+            "number": "1",
+            "title": "Battery",
+            "text": "Whoever touches...",
+            "effectiveDate": "not-a-valid-date",
+        }
+        statute = IndianaCodeClient._parse_statute(data, title="35", article="42", chapter="1")
+        assert statute is not None
+        assert statute.effective_date is None  # gracefully ignored
+
+    def test_parse_statute_returns_none_on_type_error(self):
+        """Non-string effectiveDate causes TypeError → outer except returns None."""
+        data = {
+            "number": "2",
+            "title": "Battery",
+            "text": "Whoever touches...",
+            "effectiveDate": [2024, 1, 1],  # list causes TypeError in fromisoformat
+        }
+        result = IndianaCodeClient._parse_statute(data, title="35", article="42", chapter="1")
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_fetch_title_skips_sections_where_parse_returns_none(self):
+        """_parse_statute returning None → if statute: False → 453→446 (line 453→446)."""
+        good_section = {
+            "number": "1",
+            "title": "Murder",
+            "text": "A person who...",
+            "effectiveDate": "2024-07-01",
+        }
+        bad_section = {
+            "number": "2",
+            "title": "Battery",
+            "effectiveDate": [2024, 1, 1],  # forces TypeError → returns None
+        }
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.raise_for_status = MagicMock()
+        resp.json.return_value = {
+            "articles": [
+                {
+                    "number": "42",
+                    "chapters": [
+                        {
+                            "number": "1",
+                            "sections": [good_section, bad_section],
+                        }
+                    ],
+                }
+            ]
+        }
+        mock_http = AsyncMock()
+        mock_http.get = AsyncMock(return_value=resp)
+        with patch(
+            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
+        ):
+            client = IndianaCodeClient()
+        client._client = mock_http
+
+        statutes = await client.fetch_title(35)
+        # Only the good section was appended (bad section returned None)
+        assert len(statutes) == 1
+        assert statutes[0].statute_id == "ic-35-42-1-1"

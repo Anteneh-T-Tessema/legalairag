@@ -127,3 +127,16 @@ class TestAskEndpoint:
     def test_ask_short_query_rejected(self):
         resp = client.post("/api/v1/search/ask", json={"query": "ab"}, headers=_auth())
         assert resp.status_code == 422
+
+    @patch("api.routers.search._agent")
+    def test_ask_agent_exception_returns_500(self, mock_agent):
+        """When the research agent raises, the endpoint returns HTTP 500."""
+        mock_agent.run = AsyncMock(side_effect=RuntimeError("bedrock timeout"))
+
+        resp = client.post(
+            "/api/v1/search/ask",
+            json={"query": "What is Indiana property law?"},
+            headers=_auth(),
+        )
+        assert resp.status_code == 500
+        assert "Research agent failed" in resp.json()["detail"]

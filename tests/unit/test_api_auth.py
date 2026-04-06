@@ -450,3 +450,24 @@ class TestBlacklistPrune:
             # All expired fill entries should have been pruned
             assert "fill-0" not in _blacklist
             _blacklist.clear()
+
+
+# ── auth_router: refresh with unknown user + logout ──────────────────────────
+
+
+class TestAuthRouterEdgeCases:
+    def test_refresh_with_nonexistent_user_returns_401(self):
+        """refresh() raises 401 when sub doesn't exist in _USERS (line 87)."""
+        from api.auth import create_refresh_token
+
+        # Create a valid token for a username not in the server's user store
+        token = create_refresh_token("ghost_user_xyz")
+        resp = client.post("/api/v1/auth/refresh", json={"refresh_token": token})
+        assert resp.status_code == 401
+        assert resp.json()["detail"] == "User not found"
+
+    def test_logout_returns_204(self):
+        """logout() endpoint returns 204 No Content (line 98 return None)."""
+        headers = _auth_header("admin", Role.ADMIN)
+        resp = client.post("/api/v1/auth/logout", headers=headers)
+        assert resp.status_code == 204

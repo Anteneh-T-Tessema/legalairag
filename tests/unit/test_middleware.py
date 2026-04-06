@@ -315,3 +315,134 @@ class TestRateLimitProductionDispatch:
             assert resp.headers.get("X-RateLimit-Remaining") == "55"
         finally:
             rl_mod.settings.app_env = original_env
+
+
+# ── HTTPS / HSTS header ───────────────────────────────────────────────────────
+
+
+class TestHTTPSHeaders:
+    def test_hsts_header_present_on_https_scheme(self) -> None:
+        """SecurityHeadersMiddleware sets HSTS header when scheme is https."""
+        https_client = TestClient(app, base_url="https://testserver", raise_server_exceptions=False)
+        resp = https_client.get("/health")
+        assert resp.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
+
+
+# ── Metrics ring-buffer and Prometheus formatting ─────────────────────────────
+
+
+class TestMetricsInternals:
+    def test_ring_buffer_eviction_on_overflow(self) -> None:
+        """When buffer is at _MAX_LATENCY_SAMPLES, _record pops oldest entry."""
+        import api.middleware.metrics as metrics_mod
+
+        # _record builds key as f"{method} {path}" — must use same format here
+        key = "GET _test_overflow_eviction_"
+        buf = metrics_mod._latencies[key]
+        buf.clear()
+        # Pre-fill to the maximum size
+        for i in range(metrics_mod._MAX_LATENCY_SAMPLES):
+            buf.append(float(i))
+        assert len(buf) == metrics_mod._MAX_LATENCY_SAMPLES
+
+        # One more record should evict the first entry and append the new one
+        metrics_mod._record("GET", "_test_overflow_eviction_", 200, 9999.0)
+        assert len(buf) == metrics_mod._MAX_LATENCY_SAMPLES
+        assert buf[-1] == 9999.0
+
+        # Cleanup
+        del metrics_mod._latencies[key]
+        del metrics_mod._request_count[key]
+
+    def test_format_prometheus_skips_key_with_empty_latencies(self) -> None:
+        """format_prometheus skips route entries that have an empty latency list."""
+        import api.middleware.metrics as metrics_mod
+
+        key = "GET /phantom_route_empty"
+        # Inject an entry with no latency samples — the `if not lats: continue` branch
+        metrics_mod._latencies[key] = []
+        metrics_mod._request_count[key] = 3
+
+        result = metrics_mod.format_prometheus()
+        # The requests counter should appear but the duration section should skip this key
+        assert "http_requests_total" in result
+        assert 'path="/phantom_route_empty",quantile="0.5"' not in result
+
+        # Cleanup
+        del metrics_mod._latencies[key]
+        del metrics_mod._request_count[key]
+
+
+# ── Redis lazy-init (_get_redis) ─────────────────────────────────────────────
+
+
+class TestGetRedisInit:
+    """Covers the _get_redis() try/except block (lines 41-55 in rate_limit.py)."""
+
+    def setup_method(self) -> None:
+        import api.middleware.rate_limit as rl_mod
+
+        self._rl_mod = rl_mod
+        # Ensure no cached client so _get_redis runs the full init path
+        self._orig_redis = rl_mod._redis
+        rl_mod._redis = None
+
+    def teardown_method(self) -> None:
+        self._rl_mod._redis = self._orig_redis
+
+    def test_get_redis_returns_client_on_successful_ping(self) -> None:
+        import sys
+        import types
+        from unittest.mock import MagicMock
+
+        rl_mod = self._rl_mod
+
+        fake_redis_lib = types.ModuleType("redis")
+        mock_conn = MagicMock()
+        mock_conn.ping.return_value = True
+        fake_redis_lib.Redis = MagicMock()
+        fake_redis_lib.Redis.from_url = MagicMock(return_value=mock_conn)
+
+        orig_url = rl_mod.settings.redis_url
+        rl_mod.settings.redis_url = "redis://localhost:6379/0"
+        orig_redis_mod = sys.modules.get("redis")
+        sys.modules["redis"] = fake_redis_lib
+        try:
+            result = rl_mod._get_redis()
+            assert result is mock_conn
+        finally:
+            rl_mod.settings.redis_url = orig_url
+            if orig_redis_mod is None:
+                sys.modules.pop("redis", None)
+            else:
+                sys.modules["redis"] = orig_redis_mod
+            rl_mod._redis = None
+
+    def test_get_redis_returns_none_when_ping_raises(self) -> None:
+        import sys
+        import types
+        from unittest.mock import MagicMock
+
+        rl_mod = self._rl_mod
+
+        fake_redis_lib = types.ModuleType("redis")
+        mock_conn = MagicMock()
+        mock_conn.ping.side_effect = ConnectionRefusedError("refused")
+        fake_redis_lib.Redis = MagicMock()
+        fake_redis_lib.Redis.from_url = MagicMock(return_value=mock_conn)
+
+        orig_url = rl_mod.settings.redis_url
+        rl_mod.settings.redis_url = "redis://localhost:6379/0"
+        orig_redis_mod = sys.modules.get("redis")
+        sys.modules["redis"] = fake_redis_lib
+        try:
+            result = rl_mod._get_redis()
+            assert result is None
+            assert rl_mod._redis is None
+        finally:
+            rl_mod.settings.redis_url = orig_url
+            if orig_redis_mod is None:
+                sys.modules.pop("redis", None)
+            else:
+                sys.modules["redis"] = orig_redis_mod
+            rl_mod._redis = None

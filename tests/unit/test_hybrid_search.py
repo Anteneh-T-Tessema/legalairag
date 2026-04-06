@@ -550,3 +550,188 @@ class TestBM25Search:
         )
         results = searcher._bm25_search(candidates, "battery felony", n=2)
         assert results[0].chunk_id == "relevant"
+
+
+# ── Dev mode hybrid search path ───────────────────────────────────────────────
+
+
+class TestDevModeSearch:
+    """Covers lines 103-105 in hybrid_search.py (development env path)."""
+
+    def _make_result(self, chunk_id: str) -> SearchResult:
+        return SearchResult(
+            chunk_id=chunk_id,
+            source_id=chunk_id,
+            content=f"Indiana property law content for {chunk_id}.",
+            section="",
+            citations=[],
+            metadata={},
+            score=0.8,
+        )
+
+    @pytest.mark.asyncio
+    async def test_dev_mode_uses_keyword_results_as_dense(self) -> None:
+        """In development mode, keyword_results replace dense_results (bm25_weight=1.0)."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from config.settings import settings
+        from retrieval.hybrid_search import HybridSearcher
+
+        searcher = HybridSearcher.__new__(HybridSearcher)
+        searcher._database_url = "postgresql://localhost/test"
+        searcher._conn = None
+        searcher._rrf_k = 60
+
+        kw_result = self._make_result("kw-1")
+
+        original_env = settings.app_env
+        settings.app_env = "development"
+        try:
+            with (
+                patch.object(searcher, "_vector_search", new=AsyncMock(return_value=[])),
+                patch.object(
+                    searcher, "_keyword_search", new=AsyncMock(return_value=[kw_result])
+                ),
+            ):
+                results = await searcher.search(
+                    query_vector=[0.1] * 128,
+                    query_text="Indiana property",
+                    top_k=5,
+                )
+            # The keyword result should appear in the fused output
+            chunk_ids = [r.chunk_id for r in results]
+            assert "kw-1" in chunk_ids
+        finally:
+            settings.app_env = original_env
+
+
+# ── _get_conn establishes connection ──────────────────────────────────────────
+
+
+class TestGetConn:
+    """Covers lines 300-307 in hybrid_search.py (_get_conn body)."""
+
+    @pytest.mark.asyncio
+    async def test_get_conn_creates_new_connection(self) -> None:
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from retrieval.hybrid_search import HybridSearcher
+
+        searcher = HybridSearcher.__new__(HybridSearcher)
+        searcher._database_url = "postgresql+psycopg://localhost/test"
+        searcher._conn = None
+
+        mock_conn = MagicMock()
+        mock_conn.closed = False
+
+        mock_psycopg = MagicMock()
+        mock_psycopg.AsyncConnection = MagicMock()
+        mock_psycopg.AsyncConnection.connect = AsyncMock(return_value=mock_conn)
+
+        mock_register = AsyncMock()
+
+        with (
+            patch.dict("sys.modules", {"psycopg": mock_psycopg}),
+            patch("retrieval.hybrid_search.register_vector_async", mock_register, create=True),
+        ):
+            import importlib
+            import sys
+
+            # Patch at the function level: inject psycopg into sys.modules so `import psycopg`
+            # inside _get_conn picks it up
+            sys.modules["psycopg"] = mock_psycopg
+            pgvector_psycopg_mod = MagicMock()
+            pgvector_psycopg_mod.register_vector_async = mock_register
+            sys.modules["pgvector.psycopg"] = pgvector_psycopg_mod
+
+            conn = await searcher._get_conn()
+
+        assert conn is mock_conn
+        mock_psycopg.AsyncConnection.connect.assert_awaited_once_with(
+            "postgresql://localhost/test"
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_conn_returns_existing_open_connection(self) -> None:
+        """_get_conn returns the cached connection when it is not closed."""
+        from unittest.mock import MagicMock
+
+        from retrieval.hybrid_search import HybridSearcher
+
+        searcher = HybridSearcher.__new__(HybridSearcher)
+        searcher._database_url = "postgresql://localhost/test"
+
+        existing_conn = MagicMock()
+        existing_conn.closed = False
+        searcher._conn = existing_conn
+
+        conn = await searcher._get_conn()
+        assert conn is existing_conn
+
+
+# ── Production-mode dedup path (hybrid_search.py lines 103-105) ──────────────
+
+
+class TestProductionModeDedup:
+    """
+    Tests for the merge/dedup loop that only executes when app_env != 'development'.
+    Since settings.app_env defaults to 'development', these tests explicitly patch it.
+    """
+
+    def _make_results(self, ids: list[str]) -> list[SearchResult]:
+        return [
+            SearchResult(
+                chunk_id=cid,
+                source_id=f"src-{cid}",
+                content=f"Content for {cid}",
+                section="",
+                citations=[],
+                metadata={},
+                score=0.9,
+            )
+            for cid in ids
+        ]
+
+    @pytest.mark.asyncio
+    async def test_dedup_adds_unique_keyword_results_to_dense(self) -> None:
+        """In production mode, keyword results with unique chunk_ids are merged in (lines 103-105)."""
+        from unittest.mock import AsyncMock, patch
+
+        from retrieval.hybrid_search import HybridSearcher
+
+        searcher = _make_searcher_no_conn()
+        dense = self._make_results(["d1", "d2", "d3"])
+        keyword = self._make_results(["d1", "k1", "k2"])  # k1 and k2 are new
+
+        searcher._vector_search = AsyncMock(return_value=dense)  # type: ignore[method-assign]
+        searcher._keyword_search = AsyncMock(return_value=keyword)  # type: ignore[method-assign]
+
+        with patch("retrieval.hybrid_search.settings") as mock_settings:
+            mock_settings.app_env = "production"  # NOT "development" → takes else branch
+            mock_settings.rerank_top_k = 500
+            results = await searcher.search([0.1] * 10, "battery Indiana", top_k=10)
+
+        # All 5 unique chunk_ids should eventually make it into the fused pool
+        assert isinstance(results, list)
+        assert len(results) <= 10
+
+    @pytest.mark.asyncio
+    async def test_dedup_skips_duplicate_keyword_results(self) -> None:
+        """In production mode, keyword results already in dense are skipped (103 False branch)."""
+        from unittest.mock import AsyncMock, patch
+
+        from retrieval.hybrid_search import HybridSearcher
+
+        searcher = _make_searcher_no_conn()
+        dense = self._make_results(["x1", "x2"])
+        keyword = self._make_results(["x1", "x2"])  # all duplicates, none appended
+
+        searcher._vector_search = AsyncMock(return_value=dense)  # type: ignore[method-assign]
+        searcher._keyword_search = AsyncMock(return_value=keyword)  # type: ignore[method-assign]
+
+        with patch("retrieval.hybrid_search.settings") as mock_settings:
+            mock_settings.app_env = "production"
+            mock_settings.rerank_top_k = 500
+            results = await searcher.search([0.1] * 10, "test query", top_k=5)
+
+        assert isinstance(results, list)

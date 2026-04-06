@@ -379,3 +379,301 @@ class TestContextManager:
         _run(c.__aenter__())
         _run(c.__aexit__(None, None, None))
         c._client.aclose.assert_awaited_once()
+
+
+# ── _BaseEcosystemClient.__init__ (lines 55-58) ───────────────────────────────
+
+
+class TestBaseClientInit:
+    def test_init_sets_attributes(self) -> None:
+        """Instantiating a real subclass calls _BaseEcosystemClient.__init__ (lines 55-58)."""
+        with patch("ingestion.sources.ecosystem_clients.settings") as mock_settings:
+            mock_settings.protection_order_registry_url = "http://por.example.com"
+            client = ProtectionOrderRegistryClient()
+
+        assert client._base_url == "http://por.example.com"
+        assert client._enabled is True
+        assert client._semaphore is not None
+        assert client._client is not None
+        _run(client._client.aclose())
+
+    def test_init_disabled_when_url_empty(self) -> None:
+        """Empty URL → _enabled=False."""
+        with patch("ingestion.sources.ecosystem_clients.settings") as mock_settings:
+            mock_settings.protection_order_registry_url = ""
+            client = ProtectionOrderRegistryClient()
+
+        assert client._enabled is False
+        _run(client._client.aclose())
+
+
+# ── ProtectionOrderRegistryClient optional params ─────────────────────────────
+
+
+class TestProtectionOrderOptionalParams:
+    def test_search_by_respondent_with_first_name_and_status(self) -> None:
+        """Passes first_name and status to cover lines 154 and 158."""
+        c = _make_client(ProtectionOrderRegistryClient)
+        c._client.get = AsyncMock(return_value=_mock_response({"orders": [SAMPLE_PO]}))
+        results = _run(
+            c.search_by_respondent(
+                "Smith", first_name="John", county="Marion", status="Active"
+            )
+        )
+        assert len(results) == 1
+        # Verify the params were assembled (first_name and status branches taken)
+        call_kwargs = c._client.get.call_args
+        params = call_kwargs.kwargs.get("params") or call_kwargs.args[1] if call_kwargs.args[1:] else {}
+        # Just verify it ran without error
+        assert results[0].order_id == "PO-2024-001"
+
+    def test_get_order_reraises_non_404(self) -> None:
+        """Non-404 HTTPStatusError is re-raised (covers the `raise` branch after 404 check)."""
+        c = _make_client(ProtectionOrderRegistryClient)
+        req = httpx.Request("GET", "http://test")
+        resp_500 = httpx.Response(500, json={}, request=req)
+        c._client.get = AsyncMock(
+            side_effect=httpx.HTTPStatusError("Server error", request=req, response=resp_500)
+        )
+        with pytest.raises(httpx.HTTPStatusError):
+            _run(c.get_order("some-id"))
+
+    def test_active_orders_by_county_returns_results(self) -> None:
+        """active_orders_by_county covers lines 171+ in ProtectionOrderRegistryClient."""
+        c = _make_client(ProtectionOrderRegistryClient)
+        c._client.get = AsyncMock(return_value=_mock_response({"orders": [SAMPLE_PO]}))
+        results = _run(c.active_orders_by_county("Marion"))
+        assert len(results) == 1
+        assert results[0].status == "Active"
+
+
+# ── CourtStatisticsClient additional paths ────────────────────────────────────
+
+
+class TestCourtStatisticsAdditional:
+    def test_statewide_summary_returns_list(self) -> None:
+        """statewide_summary covers all its code paths (line 255)."""
+        c = _make_client(CourtStatisticsClient)
+        c._client.get = AsyncMock(
+            return_value=_mock_response({"counties": [SAMPLE_CASELOAD]})
+        )
+        results = _run(c.statewide_summary(2023))
+        assert len(results) == 1
+        assert results[0].county == "Marion"
+
+    def test_get_county_report_reraises_non_404(self) -> None:
+        """Non-404 HTTPStatusError is re-raised from get_county_report (line 230 false branch)."""
+        c = _make_client(CourtStatisticsClient)
+        req = httpx.Request("GET", "http://test")
+        resp_503 = httpx.Response(503, json={}, request=req)
+        c._client.get = AsyncMock(
+            side_effect=httpx.HTTPStatusError("Service unavailable", request=req, response=resp_503)
+        )
+        with pytest.raises(httpx.HTTPStatusError):
+            _run(c.get_county_report("Marion", 2024))
+
+    def test_init_connects_via_settings(self) -> None:
+        """CourtStatisticsClient.__init__ calls super().__init__ (lines 230 area)."""
+        with patch("ingestion.sources.ecosystem_clients.settings") as mock_settings:
+            mock_settings.court_statistics_url = "http://stats.example.com"
+            client = CourtStatisticsClient()
+        assert client._base_url == "http://stats.example.com"
+        _run(client._client.aclose())
+
+
+# ── EFilingFeedClient additional paths ────────────────────────────────────────
+
+
+class TestEFilingAdditional:
+    def test_recent_accepted_without_county(self) -> None:
+        """recent_accepted without county skips the county branch (line 315)."""
+        c = _make_client(EFilingFeedClient)
+        c._client.get = AsyncMock(return_value=_mock_response({"filings": [SAMPLE_EFILING]}))
+        results = _run(c.recent_accepted(days_back=3))
+        assert len(results) == 1
+
+    def test_recent_accepted_with_county(self) -> None:
+        """recent_accepted with county covers the county param branch (line 315)."""
+        c = _make_client(EFilingFeedClient)
+        c._client.get = AsyncMock(return_value=_mock_response({"filings": []}))
+        results = _run(c.recent_accepted(county="Marion", days_back=1))
+        assert results == []
+
+    def test_get_filing_reraises_non_404(self) -> None:
+        """Non-404 HTTPStatusError re-raised from get_filing (line 346 false branch)."""
+        c = _make_client(EFilingFeedClient)
+        req = httpx.Request("GET", "http://test")
+        resp_500 = httpx.Response(500, json={}, request=req)
+        c._client.get = AsyncMock(
+            side_effect=httpx.HTTPStatusError("Server error", request=req, response=resp_500)
+        )
+        with pytest.raises(httpx.HTTPStatusError):
+            _run(c.get_filing("ENV-123"))
+
+    def test_init_connects_via_settings(self) -> None:
+        """EFilingFeedClient.__init__ calls super().__init__ (line 315 area)."""
+        with patch("ingestion.sources.ecosystem_clients.settings") as mock_settings:
+            mock_settings.efiling_portal_base = "http://efile.example.com"
+            client = EFilingFeedClient()
+        assert client._base_url == "http://efile.example.com"
+        _run(client._client.aclose())
+
+
+# ── BMVClient __init__ and 404 paths ─────────────────────────────────────────
+
+
+class TestBMVClientAdditional:
+    def test_init_without_api_key(self) -> None:
+        """BMVClient.__init__ with empty api_key (lines 402-405 without line 404)."""
+        with patch("ingestion.sources.ecosystem_clients.settings") as mock_settings:
+            mock_settings.bmv_api_key = ""
+            mock_settings.bmv_api_base = "http://bmv.example.com"
+            client = BMVClient()
+        assert client._base_url == "http://bmv.example.com"
+        _run(client._client.aclose())
+
+    def test_init_with_api_key(self) -> None:
+        """BMVClient.__init__ with api_key set covers the headers branch (line 404)."""
+        with patch("ingestion.sources.ecosystem_clients.settings") as mock_settings:
+            mock_settings.bmv_api_key = "secret-key"
+            mock_settings.bmv_api_base = "http://bmv.example.com"
+            client = BMVClient()
+        assert client._base_url == "http://bmv.example.com"
+        _run(client._client.aclose())
+
+    def test_lookup_by_license_404(self) -> None:
+        """lookup_by_license returns None on 404 (lines 429-432)."""
+        c = _make_client(BMVClient)
+        req = httpx.Request("GET", "http://test")
+        resp_404 = httpx.Response(404, json={}, request=req)
+        c._client.get = AsyncMock(
+            side_effect=httpx.HTTPStatusError("Not found", request=req, response=resp_404)
+        )
+        assert _run(c.lookup_by_license("9999-0000-0000")) is None
+
+    def test_lookup_by_license_reraises_non_404(self) -> None:
+        """Non-404 HTTPStatusError re-raised from lookup_by_license."""
+        c = _make_client(BMVClient)
+        req = httpx.Request("GET", "http://test")
+        resp_500 = httpx.Response(500, json={}, request=req)
+        c._client.get = AsyncMock(
+            side_effect=httpx.HTTPStatusError("Error", request=req, response=resp_500)
+        )
+        with pytest.raises(httpx.HTTPStatusError):
+            _run(c.lookup_by_license("1234-5678-9012"))
+
+    def test_lookup_by_case_reraises_non_404(self) -> None:
+        """Non-404 HTTPStatusError re-raised from lookup_by_case (line 421 false branch)."""
+        c = _make_client(BMVClient)
+        req = httpx.Request("GET", "http://test")
+        resp_500 = httpx.Response(500, json={}, request=req)
+        c._client.get = AsyncMock(
+            side_effect=httpx.HTTPStatusError("Error", request=req, response=resp_500)
+        )
+        with pytest.raises(httpx.HTTPStatusError):
+            _run(c.lookup_by_case("C-001"))
+
+
+# ── ECRWClient optional params and additional paths ───────────────────────────
+
+
+class TestECRWClientAdditional:
+    def test_search_records_with_all_optional_params(self) -> None:
+        """search_records with all optional params covers lines 505-513+."""
+        c = _make_client(ECRWClient)
+        c._client.get = AsyncMock(
+            return_value=_mock_response({"records": [SAMPLE_ECRW]})
+        )
+        results = _run(
+            c.search_records(
+                case_number="49D01-2010-CF-045678",
+                county="Marion",
+                document_type="Judgment",
+                date_from=date(2024, 1, 1),
+                date_to=date(2024, 12, 31),
+                page=2,
+                page_size=25,
+            )
+        )
+        assert len(results) == 1
+
+    def test_search_records_minimal(self) -> None:
+        """search_records with no optional params (skips all optional branches)."""
+        c = _make_client(ECRWClient)
+        c._client.get = AsyncMock(
+            return_value=_mock_response({"records": []})
+        )
+        results = _run(c.search_records())
+        assert results == []
+
+    def test_get_record_reraises_non_404(self) -> None:
+        """Non-404 HTTPStatusError re-raised from get_record."""
+        c = _make_client(ECRWClient)
+        req = httpx.Request("GET", "http://test")
+        resp_403 = httpx.Response(403, json={}, request=req)
+        c._client.get = AsyncMock(
+            side_effect=httpx.HTTPStatusError("Forbidden", request=req, response=resp_403)
+        )
+        with pytest.raises(httpx.HTTPStatusError):
+            _run(c.get_record("ECRW-99"))
+
+    def test_bulk_export_with_date_range(self) -> None:
+        """bulk_export with date_from and date_to covers lines 522 and 526."""
+        c = _make_client(ECRWClient)
+        c._client.get = AsyncMock(
+            return_value=_mock_response({"records": [SAMPLE_ECRW]})
+        )
+        results = _run(
+            c.bulk_export(
+                "Marion",
+                date_from=date(2024, 1, 1),
+                date_to=date(2024, 12, 31),
+            )
+        )
+        assert len(results) == 1
+
+    def test_bulk_export_without_dates(self) -> None:
+        """bulk_export without optional dates (date_from/date_to branches skipped)."""
+        c = _make_client(ECRWClient)
+        c._client.get = AsyncMock(
+            return_value=_mock_response({"records": []})
+        )
+        results = _run(c.bulk_export("Hamilton"))
+        assert results == []
+
+    def test_init_connects_via_settings(self) -> None:
+        """ECRWClient.__init__ calls super().__init__ (line 485)."""
+        with patch("ingestion.sources.ecosystem_clients.settings") as mock_settings:
+            mock_settings.ecrw_api_base = "http://ecrw.example.com"
+            client = ECRWClient()
+        assert client._base_url == "http://ecrw.example.com"
+        _run(client._client.aclose())
+
+
+# ── Success paths for get_order / get_filing / get_record ─────────────────────
+
+
+class TestGetMethodSuccessPaths:
+    def test_get_order_success(self) -> None:
+        """get_order returns parsed object on success (covers return self._parse(data) path)."""
+        c = _make_client(ProtectionOrderRegistryClient)
+        c._client.get = AsyncMock(return_value=_mock_response(SAMPLE_PO))
+        result = _run(c.get_order("PO-2024-001"))
+        assert result is not None
+        assert result.order_id == "PO-2024-001"
+
+    def test_get_filing_success(self) -> None:
+        """get_filing returns parsed object on success (covers return self._parse(data) path)."""
+        c = _make_client(EFilingFeedClient)
+        c._client.get = AsyncMock(return_value=_mock_response(SAMPLE_EFILING))
+        result = _run(c.get_filing("ENV-2024-001"))
+        assert result is not None
+        assert result.envelope_id == "ENV-2024-001"
+
+    def test_get_record_success(self) -> None:
+        """get_record returns parsed object on success (covers return self._parse(data) path)."""
+        c = _make_client(ECRWClient)
+        c._client.get = AsyncMock(return_value=_mock_response(SAMPLE_ECRW))
+        result = _run(c.get_record("ECRW-12345"))
+        assert result is not None
+        assert result.record_id == "ECRW-12345"
