@@ -62,7 +62,8 @@ class CrossEncoderReranker:
         for i in range(0, len(pairs), self._batch_size):
             batch = pairs[i : i + self._batch_size]
             batch_scores: list[float] = await asyncio.get_event_loop().run_in_executor(
-                None, lambda b=batch: model.predict(b).tolist()  # type: ignore[misc]
+                None,
+                lambda b=batch: model.predict(b).tolist(),  # type: ignore[misc]
             )
             scores.extend(batch_scores)
 

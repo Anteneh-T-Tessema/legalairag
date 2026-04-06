@@ -22,6 +22,7 @@ By default the script targets the local Docker Postgres:
   DATABASE_URL=postgresql://user:password@localhost:5432/indyleg
 Override by setting DATABASE_URL in your environment.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -44,8 +45,8 @@ IGA_API_BASE = "https://api.iga.in.gov"
 
 # Titles to ingest when --titles is not specified
 DEFAULT_TITLES = [
-    "6",   # Taxation
-    "9",   # Motor Vehicles
+    "6",  # Taxation
+    "9",  # Motor Vehicles
     "11",  # Corrections & Criminal Justice
     "22",  # Labor & Safety
     "31",  # Family Law
@@ -61,6 +62,7 @@ MAX_CHUNK_CHARS = 2000
 # ---------------------------------------------------------------------------
 # Normalisation helpers
 # ---------------------------------------------------------------------------
+
 
 def _slug(text: str) -> str:
     """Return a lowercase, hyphenated identifier from an IC citation."""
@@ -111,6 +113,7 @@ def _split_into_chunks(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[str]
 # Deterministic vector (dev/seed only — matches seed_dev_data.py)
 # ---------------------------------------------------------------------------
 
+
 def _deterministic_vector(text: str, dim: int = 1536) -> list[float]:
     seed = int(hashlib.md5(text.encode()).hexdigest(), 16)  # noqa: S324
     rng_state = seed
@@ -125,6 +128,7 @@ def _deterministic_vector(text: str, dim: int = 1536) -> list[float]:
 # ---------------------------------------------------------------------------
 # Database helpers
 # ---------------------------------------------------------------------------
+
 
 def _upsert_chunks(conn: Any, chunks: list[dict]) -> int:
     """Insert *chunks* into the paragraphs table; return count inserted/updated."""
@@ -166,6 +170,7 @@ def _upsert_chunks(conn: Any, chunks: list[dict]) -> int:
 # ---------------------------------------------------------------------------
 # IGA REST API walker
 # ---------------------------------------------------------------------------
+
 
 def _api_get(session: Any, path: str, api_key: str) -> dict | list | None:
     """GET *path* from the IGA API; return parsed JSON or None on error."""
@@ -252,12 +257,14 @@ def walk_api(api_key: str, year: int, titles: list[str]) -> list[dict]:
             if not title_data:
                 continue
 
+            if not isinstance(title_data, dict):
+                continue
             articles = title_data.get("articles", []) or []
             for art in articles:
                 art_num = art.get("id", "").split(".")[-1]
                 art_path = f"{title_path}/article/{art_num}"
                 art_data = _api_get(session, art_path, api_key)
-                if not art_data:
+                if not art_data or not isinstance(art_data, dict):
                     continue
 
                 chapters = art_data.get("chapters", []) or []
@@ -265,7 +272,7 @@ def walk_api(api_key: str, year: int, titles: list[str]) -> list[dict]:
                     chap_num = chap.get("id", "").split(".")[-1]
                     chap_path = f"{art_path}/chapter/{chap_num}"
                     chap_data = _api_get(session, chap_path, api_key)
-                    if not chap_data:
+                    if not chap_data or not isinstance(chap_data, dict):
                         continue
 
                     sections = chap_data.get("sections", []) or []
@@ -273,16 +280,14 @@ def walk_api(api_key: str, year: int, titles: list[str]) -> list[dict]:
                         sec_id = sec.get("id", "")
                         sec_path = f"{chap_path}/section/{sec_id}"
                         sec_data = _api_get(session, sec_path, api_key)
-                        if not sec_data:
+                        if not sec_data or not isinstance(sec_data, dict):
                             continue
 
                         new_chunks = _build_chunk_from_api_section(
                             sec_data, title_num, art_num, chap_num
                         )
                         if new_chunks:
-                            print(
-                                f"  IC {sec_id}: {len(new_chunks)} chunk(s)"
-                            )
+                            print(f"  IC {sec_id}: {len(new_chunks)} chunk(s)")
                             chunks.extend(new_chunks)
 
     return chunks
@@ -291,6 +296,7 @@ def walk_api(api_key: str, year: int, titles: list[str]) -> list[dict]:
 # ---------------------------------------------------------------------------
 # IGA HTML ZIP parser
 # ---------------------------------------------------------------------------
+
 
 def _parse_section_html(html: str, filename: str) -> dict | None:
     """Extract section text from an IGA HTML file.
@@ -374,9 +380,7 @@ def walk_zip(zip_path: str, titles: list[str]) -> list[dict]:
             art_folder = parts_path[1] if len(parts_path) > 1 else ""
             article = re.sub(r"[^0-9.]", "", art_folder) or "0"
 
-            new_chunks = _build_chunk_from_api_section(
-                sec_data, title_num, article, "0"
-            )
+            new_chunks = _build_chunk_from_api_section(sec_data, title_num, article, "0")
             if new_chunks:
                 chunks.extend(new_chunks)
 
@@ -387,6 +391,7 @@ def walk_zip(zip_path: str, titles: list[str]) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(

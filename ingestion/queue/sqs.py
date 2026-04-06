@@ -89,9 +89,7 @@ class SQSProducer:
             batch_entries = entries
 
             def _send_batch(be: list[dict[str, Any]] = batch_entries) -> Any:
-                return self._client.send_message_batch(
-                    QueueUrl=self._queue_url, Entries=be
-                )
+                return self._client.send_message_batch(QueueUrl=self._queue_url, Entries=be)
 
             response = await loop.run_in_executor(
                 None,

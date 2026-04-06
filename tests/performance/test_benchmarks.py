@@ -164,7 +164,7 @@ class TestPipelineLatency:
         elapsed = time.perf_counter() - start
 
         per_call = elapsed / 50
-        assert per_call < 0.05, f"Agent orchestration: {per_call*1000:.1f}ms/call (budget: 50ms)"
+        assert per_call < 0.05, f"Agent orchestration: {per_call * 1000:.1f}ms/call (budget: 50ms)"
 
 
 # ── Concurrent API request simulation ────────────────────────────────────────
@@ -177,10 +177,7 @@ class TestConcurrentRequests:
     async def test_concurrent_query_parsing(self):
         import asyncio
 
-        queries = [
-            f"eviction notice county-{i} Indiana IC § 35-42-1-{i}"
-            for i in range(100)
-        ]
+        queries = [f"eviction notice county-{i} Indiana IC § 35-42-1-{i}" for i in range(100)]
 
         async def parse_one(q: str) -> Any:
             return parse_legal_query(q)

@@ -120,6 +120,7 @@ class TestBedrockLLM:
                     "being commits murder, a Level 1 felony."
                 ),
                 citations=["IC 35-42-1-1"],
+                metadata={"type": "statute", "jurisdiction": "Indiana"},
                 score=0.95,
             ),
         ]

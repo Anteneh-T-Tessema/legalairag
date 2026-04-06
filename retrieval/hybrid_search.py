@@ -187,9 +187,7 @@ class HybridSearcher:
         # subset of the query terms (e.g. a murder statute without "penalty").
         or_query = " OR ".join(query_text.split())
 
-        where_clauses = [
-            "to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"
-        ]
+        where_clauses = ["to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"]
         params: list[Any] = [or_query]
 
         if jurisdiction:
@@ -205,7 +203,7 @@ class HybridSearcher:
                    ts_rank(to_tsvector('english', content),
                            plainto_tsquery('english', %s)) AS score
             FROM legal_chunks
-            WHERE {' AND '.join(where_clauses)}
+            WHERE {" AND ".join(where_clauses)}
             ORDER BY score DESC
             LIMIT %s;
         """

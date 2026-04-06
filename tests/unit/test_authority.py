@@ -475,9 +475,7 @@ def test_parse_edge_default_treatment():
 def test_parse_edge_with_date():
     from datetime import date as _date
 
-    edge = CitationGraph.parse_edge_from_context(
-        "a", "b", "cited", date_cited=_date(2023, 6, 15)
-    )
+    edge = CitationGraph.parse_edge_from_context("a", "b", "cited", date_cited=_date(2023, 6, 15))
     assert edge.date_cited == _date(2023, 6, 15)
 
 

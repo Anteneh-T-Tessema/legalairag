@@ -178,8 +178,8 @@ class TestWriteAuditLog:
         mock_session = MagicMock()
         mock_session.client.return_value = mock_ctx
 
-        import types
         import sys
+        import types
 
         fake_aioboto3 = types.ModuleType("aioboto3")
         fake_aioboto3.Session = MagicMock(return_value=mock_session)  # type: ignore[attr-defined]

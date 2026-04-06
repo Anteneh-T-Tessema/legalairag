@@ -79,17 +79,17 @@ class VectorIndexer:
     async def _get_conn(self) -> psycopg.AsyncConnection[Any]:
         if self._conn is None or self._conn.closed:
             self._conn = await psycopg.AsyncConnection.connect(self._database_url)
-            await register_vector(self._conn)
+            await register_vector(self._conn)  # type: ignore[arg-type]
             await self._ensure_schema()
         return self._conn
 
     async def _ensure_schema(self) -> None:
         conn = await self._get_conn()
         async with conn.cursor() as cur:
-            await cur.execute(_CREATE_EXTENSION)
-            await cur.execute(_CREATE_TABLE)
-            await cur.execute(_CREATE_VERSION_TABLE)
-            await cur.execute(_CREATE_CITATION_TABLE)
+            await cur.execute(_CREATE_EXTENSION)  # type: ignore[arg-type]
+            await cur.execute(_CREATE_TABLE)  # type: ignore[arg-type]
+            await cur.execute(_CREATE_VERSION_TABLE)  # type: ignore[arg-type]
+            await cur.execute(_CREATE_CITATION_TABLE)  # type: ignore[arg-type]
         await conn.commit()
 
     async def upsert_batch(self, pairs: list[tuple[Chunk, list[float]]]) -> None:

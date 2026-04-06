@@ -12,11 +12,11 @@ from datetime import datetime, timedelta, timezone
 from typing import Annotated, Any
 
 try:
-    from enum import StrEnum
+    from enum import StrEnum  # type: ignore[assignment]
 except ImportError:  # Python < 3.11
     from enum import Enum
 
-    class StrEnum(str, Enum):  # type: ignore[no-redef]  # noqa: UP042
+    class StrEnum(str, Enum):  # type: ignore[no-redef,assignment]  # noqa: UP042
         pass
 
 

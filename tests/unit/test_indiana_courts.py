@@ -242,9 +242,7 @@ class TestSearchCasesOptionalParams:
     def test_search_with_all_params(self):
         """Passes county, case_type, date_from, date_to — covers lines 88, 90, 92, 94."""
         c = _make_court_client()
-        c._client.get = AsyncMock(
-            return_value=_mock_case_resp({"items": [SAMPLE_CASE_DATA]})
-        )
+        c._client.get = AsyncMock(return_value=_mock_case_resp({"items": [SAMPLE_CASE_DATA]}))
         cases = _run(
             c.search_cases(
                 county="Marion",
@@ -331,9 +329,7 @@ class TestListRecentFilings:
     def test_list_recent_filings_calls_search_cases(self):
         """list_recent_filings delegates to search_cases (lines 120-123)."""
         c = _make_court_client()
-        c._client.get = AsyncMock(
-            return_value=_mock_case_resp({"items": [SAMPLE_CASE_DATA]})
-        )
+        c._client.get = AsyncMock(return_value=_mock_case_resp({"items": [SAMPLE_CASE_DATA]}))
         cases = _run(c.list_recent_filings("Marion", days_back=3))
         assert len(cases) == 1
         assert cases[0].jurisdiction == "Marion"
@@ -346,19 +342,13 @@ class TestClientGetHTTPStatusError:
     def test_raises_http_status_error(self):
         """_get catches HTTPStatusError, logs, and re-raises (lines 139-141)."""
         c = _make_court_client()
-        req = MagicMock()
-        err_resp = MagicMock()
-        err_resp.status_code = 403
-        err = MagicMock(spec=Exception)
 
         import httpx as _httpx
 
         real_req = _httpx.Request("GET", "http://test")
         real_resp = _httpx.Response(403, json={}, request=real_req)
         c._client.get = AsyncMock(
-            side_effect=_httpx.HTTPStatusError(
-                "Forbidden", request=real_req, response=real_resp
-            )
+            side_effect=_httpx.HTTPStatusError("Forbidden", request=real_req, response=real_resp)
         )
         with pytest.raises(_httpx.HTTPStatusError):
             _run(c._get("/cases"))
@@ -417,9 +407,7 @@ class TestMyCaseClientSearchByParty:
     def test_search_by_party_basic(self):
         """search_by_party without options (lines 353-364)."""
         c = _make_mycase_client()
-        c._client.get = AsyncMock(
-            return_value=_mock_mycase_resp({"results": [SAMPLE_MYCASE]})
-        )
+        c._client.get = AsyncMock(return_value=_mock_mycase_resp({"results": [SAMPLE_MYCASE]}))
         results = _run(c.search_by_party("Smith"))
         assert len(results) == 1
         result = results[0]
@@ -430,18 +418,14 @@ class TestMyCaseClientSearchByParty:
     def test_search_by_party_with_county_and_type(self):
         """search_by_party with county and valid case_type_code (lines 358-361)."""
         c = _make_mycase_client()
-        c._client.get = AsyncMock(
-            return_value=_mock_mycase_resp({"results": [SAMPLE_MYCASE]})
-        )
+        c._client.get = AsyncMock(return_value=_mock_mycase_resp({"results": [SAMPLE_MYCASE]}))
         results = _run(c.search_by_party("Smith", county="Marion", case_type_code="CF"))
         assert len(results) == 1
 
     def test_search_by_party_invalid_type_skips_param(self):
         """Invalid case_type_code is not added to params (covers False branch of 360)."""
         c = _make_mycase_client()
-        c._client.get = AsyncMock(
-            return_value=_mock_mycase_resp({"results": []})
-        )
+        c._client.get = AsyncMock(return_value=_mock_mycase_resp({"results": []}))
         results = _run(c.search_by_party("Jones", case_type_code="INVALID"))
         assert results == []
 
@@ -450,9 +434,7 @@ class TestMyCaseClientSearchByParty:
         c = _make_mycase_client()
         record_no_hearing = {**SAMPLE_MYCASE}
         del record_no_hearing["nextHearing"]
-        c._client.get = AsyncMock(
-            return_value=_mock_mycase_resp({"results": [record_no_hearing]})
-        )
+        c._client.get = AsyncMock(return_value=_mock_mycase_resp({"results": [record_no_hearing]}))
         results = _run(c.search_by_party("Smith"))
         assert results[0].next_hearing is None
 
@@ -461,9 +443,7 @@ class TestMyCaseClientSearchByCaseNumber:
     def test_search_by_case_number_success(self):
         """search_by_case_number returns result on success (lines 368-375)."""
         c = _make_mycase_client()
-        c._client.get = AsyncMock(
-            return_value=_mock_mycase_resp(SAMPLE_MYCASE)
-        )
+        c._client.get = AsyncMock(return_value=_mock_mycase_resp(SAMPLE_MYCASE))
         result = _run(c.search_by_case_number("49D01-2401-CF-000789"))
         assert result is not None
         assert result.case_number == "49D01-2401-CF-000789"
@@ -498,18 +478,14 @@ class TestMyCaseClientRecentFilings:
     def test_recent_filings_without_type(self):
         """recent_filings without case_type_code (lines 385-397)."""
         c = _make_mycase_client()
-        c._client.get = AsyncMock(
-            return_value=_mock_mycase_resp({"results": [SAMPLE_MYCASE]})
-        )
+        c._client.get = AsyncMock(return_value=_mock_mycase_resp({"results": [SAMPLE_MYCASE]}))
         results = _run(c.recent_filings("Marion", days_back=7))
         assert len(results) == 1
 
     def test_recent_filings_with_valid_type(self):
         """recent_filings with valid case_type_code adds caseType param (line 393-394)."""
         c = _make_mycase_client()
-        c._client.get = AsyncMock(
-            return_value=_mock_mycase_resp({"results": [SAMPLE_MYCASE]})
-        )
+        c._client.get = AsyncMock(return_value=_mock_mycase_resp({"results": [SAMPLE_MYCASE]}))
         results = _run(c.recent_filings("Hamilton", case_type_code="CM", days_back=3))
         assert len(results) == 1
 
@@ -518,9 +494,7 @@ class TestMyCaseClientGet:
     def test_get_returns_json_on_success(self):
         """MyCaseClient._get covers lines 402-412."""
         c = _make_mycase_client()
-        c._client.get = AsyncMock(
-            return_value=_mock_mycase_resp({"results": []})
-        )
+        c._client.get = AsyncMock(return_value=_mock_mycase_resp({"results": []}))
         result = _run(c._get("/search/party"))
         assert result == {"results": []}
 

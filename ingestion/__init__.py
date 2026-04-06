@@ -14,12 +14,15 @@ __all__ = [
 def __getattr__(name: str) -> object:  # noqa: C901
     if name in ("Chunk", "LegalChunker"):
         from ingestion.pipeline.chunker import Chunk, LegalChunker
+
         return {"Chunk": Chunk, "LegalChunker": LegalChunker}[name]
     if name == "BedrockEmbedder":
         from ingestion.pipeline.embedder import BedrockEmbedder
+
         return BedrockEmbedder
     if name == "IngestionWorker":
         from ingestion.pipeline.worker import IngestionWorker
+
         return IngestionWorker
     if name in ("IngestionMessage", "SQSConsumer", "SQSProducer"):
         from ingestion.queue.sqs import IngestionMessage, SQSConsumer, SQSProducer

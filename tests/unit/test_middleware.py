@@ -325,7 +325,8 @@ class TestHTTPSHeaders:
         """SecurityHeadersMiddleware sets HSTS header when scheme is https."""
         https_client = TestClient(app, base_url="https://testserver", raise_server_exceptions=False)
         resp = https_client.get("/health")
-        assert resp.headers.get("Strict-Transport-Security") == "max-age=31536000; includeSubDomains"
+        hsts = "max-age=31536000; includeSubDomains"
+        assert resp.headers.get("Strict-Transport-Security") == hsts
 
 
 # ── Metrics ring-buffer and Prometheus formatting ─────────────────────────────

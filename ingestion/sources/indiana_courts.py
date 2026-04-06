@@ -424,7 +424,8 @@ class MyCaseClient:
             case_number=data.get("caseNumber", ""),
             case_type=CASE_TYPE_CODES.get(
                 data.get("caseTypeCode", ""), data.get("caseType", "Unknown")
-            ),
+            )
+            or "Unknown",
             case_type_code=data.get("caseTypeCode", ""),
             court=data.get("court", ""),
             county=data.get("county", ""),

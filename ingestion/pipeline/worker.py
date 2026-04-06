@@ -91,7 +91,7 @@ class IngestionWorker:
         # matches the last ingested version, preventing redundant Bedrock calls.
         _version_id, is_new_version = await self._indexer.record_version(
             source_id=message.source_id,
-            content=content,
+            content=content.decode("utf-8", errors="replace"),
             metadata=metadata,
         )
         if not is_new_version:

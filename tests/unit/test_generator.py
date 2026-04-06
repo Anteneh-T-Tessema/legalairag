@@ -64,6 +64,7 @@ class TestValidator:
 
 # ── LegalGenerator (full generate() pipeline) ────────────────────────────────
 
+
 def _make_context_chunks(source_ids: list[str]) -> list[SearchResult]:
     return [
         SearchResult(

@@ -37,9 +37,7 @@ class ObservabilityStack(cdk.Stack):
         super().__init__(scope, id, **kwargs)
 
         # ── SNS alert topic ──────────────────────────────────────────────────
-        self.alert_topic = sns.Topic(
-            self, "AlertTopic", topic_name=f"indyleg-alerts-{env_name}"
-        )
+        self.alert_topic = sns.Topic(self, "AlertTopic", topic_name=f"indyleg-alerts-{env_name}")
 
         # ── ALB metrics ──────────────────────────────────────────────────────
         alb_5xx = cw.Metric(
@@ -181,9 +179,7 @@ class ObservabilityStack(cdk.Stack):
         ecs_cpu_alarm.add_alarm_action(cw_actions.SnsAction(self.alert_topic))
 
         # ── Dashboard ────────────────────────────────────────────────────────
-        dashboard = cw.Dashboard(
-            self, "IndyLegDashboard", dashboard_name=f"IndyLeg-{env_name}"
-        )
+        dashboard = cw.Dashboard(self, "IndyLegDashboard", dashboard_name=f"IndyLeg-{env_name}")
 
         dashboard.add_widgets(
             cw.TextWidget(width=24, height=1, markdown="# IndyLeg Platform — Overview"),

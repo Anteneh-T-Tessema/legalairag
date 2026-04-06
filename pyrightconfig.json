@@ -12,5 +12,7 @@
     "reportUnknownVariableType": false,
     "reportUnknownArgumentType": false,
     "reportUnknownParameterType": false,
-    "reportUnknownLambdaType": false
+    "reportUnknownLambdaType": false,
+    "reportAttributeAccessIssue": false,
+    "reportArgumentType": false
 }

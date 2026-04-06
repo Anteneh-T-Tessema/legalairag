@@ -172,9 +172,7 @@ class TestBedrockLLMClient:
             "The defendant was found guilty.\n"
             "---\n"
         )
-        result = BedrockLLMClient._dev_fallback(
-            [{"role": "user", "content": prompt}]
-        )
+        result = BedrockLLMClient._dev_fallback([{"role": "user", "content": prompt}])
         assert "[DEV MODE" in result
         assert "Section 1" in result or "case-001" in result
 

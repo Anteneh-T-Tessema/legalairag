@@ -252,10 +252,7 @@ def test_analyze_returns_list_of_fraud_indicators():
 
 def test_identity_reuse_dob_in_four_cases():
     """DOB appearing in 4+ cases triggers medium identity_reuse indicator."""
-    results = [
-        _result(f"dob-{i}", content="DOB: 03/15/1985 (case record)")
-        for i in range(4)
-    ]
+    results = [_result(f"dob-{i}", content="DOB: 03/15/1985 (case record)") for i in range(4)]
     indicators = _FilingPatternAnalyzer._detect_identity_reuse(results)
     dob_inds = [i for i in indicators if i.indicator_type == "identity_reuse"]
     assert dob_inds
@@ -264,10 +261,7 @@ def test_identity_reuse_dob_in_four_cases():
 
 def test_identity_reuse_dob_three_cases_not_triggered():
     """DOB in 3 cases (threshold is >3) does NOT trigger."""
-    results = [
-        _result(f"dob-{i}", content="DOB: 07/04/1990 case record")
-        for i in range(3)
-    ]
+    results = [_result(f"dob-{i}", content="DOB: 07/04/1990 case record") for i in range(3)]
     indicators = _FilingPatternAnalyzer._detect_identity_reuse(results)
     dob_inds = [i for i in indicators if i.indicator_type == "identity_reuse"]
     assert not dob_inds
@@ -450,7 +444,7 @@ async def test_fraud_agent_execute_llm_failure_falls_back():
 
 
 def test_detect_burst_filing_skips_result_with_no_filing_date():
-    """Results with no filing_date metadata are skipped (line 100: if not filed_str or not parties)."""
+    """Results with no filing_date metadata are skipped."""
     result = _result("no-date", parties=["Corp X"])  # no filing_date → filed_str is ""
     indicators = _FilingPatternAnalyzer._detect_burst_filing([result])
     assert not any(i.indicator_type == "burst_filing" for i in indicators)

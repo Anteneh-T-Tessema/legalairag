@@ -174,9 +174,7 @@ class TestKeywordSearchParamOrdering:
 
         # Build params in the same way _keyword_search does
         or_query = " OR ".join(query_text.split())
-        where_clauses = [
-            "to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"
-        ]
+        where_clauses = ["to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"]
         params: list = [or_query]
         if jurisdiction:
             where_clauses.append("metadata->>'jurisdiction' = %s")
@@ -202,9 +200,7 @@ class TestKeywordSearchParamOrdering:
         case_type = None
 
         or_query = " OR ".join(query_text.split())
-        where_clauses = [
-            "to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"
-        ]
+        where_clauses = ["to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"]
         params: list = [or_query]
         if jurisdiction:
             where_clauses.append("metadata->>'jurisdiction' = %s")
@@ -231,9 +227,7 @@ class TestKeywordSearchParamOrdering:
         case_type = "Family"
 
         or_query = " OR ".join(query_text.split())
-        where_clauses = [
-            "to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"
-        ]
+        where_clauses = ["to_tsvector('english', content) @@ websearch_to_tsquery('english', %s)"]
         params: list = [or_query]
         if jurisdiction:
             where_clauses.append("metadata->>'jurisdiction' = %s")
@@ -572,7 +566,7 @@ class TestDevModeSearch:
     @pytest.mark.asyncio
     async def test_dev_mode_uses_keyword_results_as_dense(self) -> None:
         """In development mode, keyword_results replace dense_results (bm25_weight=1.0)."""
-        from unittest.mock import AsyncMock, MagicMock, patch
+        from unittest.mock import AsyncMock, patch
 
         from config.settings import settings
         from retrieval.hybrid_search import HybridSearcher
@@ -589,9 +583,7 @@ class TestDevModeSearch:
         try:
             with (
                 patch.object(searcher, "_vector_search", new=AsyncMock(return_value=[])),
-                patch.object(
-                    searcher, "_keyword_search", new=AsyncMock(return_value=[kw_result])
-                ),
+                patch.object(searcher, "_keyword_search", new=AsyncMock(return_value=[kw_result])),
             ):
                 results = await searcher.search(
                     query_vector=[0.1] * 128,
@@ -634,7 +626,6 @@ class TestGetConn:
             patch.dict("sys.modules", {"psycopg": mock_psycopg}),
             patch("retrieval.hybrid_search.register_vector_async", mock_register, create=True),
         ):
-            import importlib
             import sys
 
             # Patch at the function level: inject psycopg into sys.modules so `import psycopg`
@@ -647,9 +638,7 @@ class TestGetConn:
             conn = await searcher._get_conn()
 
         assert conn is mock_conn
-        mock_psycopg.AsyncConnection.connect.assert_awaited_once_with(
-            "postgresql://localhost/test"
-        )
+        mock_psycopg.AsyncConnection.connect.assert_awaited_once_with("postgresql://localhost/test")
 
     @pytest.mark.asyncio
     async def test_get_conn_returns_existing_open_connection(self) -> None:
@@ -694,10 +683,8 @@ class TestProductionModeDedup:
 
     @pytest.mark.asyncio
     async def test_dedup_adds_unique_keyword_results_to_dense(self) -> None:
-        """In production mode, keyword results with unique chunk_ids are merged in (lines 103-105)."""
+        """In production mode, keyword results with unique chunk_ids are merged in."""
         from unittest.mock import AsyncMock, patch
-
-        from retrieval.hybrid_search import HybridSearcher
 
         searcher = _make_searcher_no_conn()
         dense = self._make_results(["d1", "d2", "d3"])
@@ -719,8 +706,6 @@ class TestProductionModeDedup:
     async def test_dedup_skips_duplicate_keyword_results(self) -> None:
         """In production mode, keyword results already in dense are skipped (103 False branch)."""
         from unittest.mock import AsyncMock, patch
-
-        from retrieval.hybrid_search import HybridSearcher
 
         searcher = _make_searcher_no_conn()
         dense = self._make_results(["x1", "x2"])

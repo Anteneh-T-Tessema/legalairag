@@ -416,14 +416,9 @@ class TestProtectionOrderOptionalParams:
         c = _make_client(ProtectionOrderRegistryClient)
         c._client.get = AsyncMock(return_value=_mock_response({"orders": [SAMPLE_PO]}))
         results = _run(
-            c.search_by_respondent(
-                "Smith", first_name="John", county="Marion", status="Active"
-            )
+            c.search_by_respondent("Smith", first_name="John", county="Marion", status="Active")
         )
         assert len(results) == 1
-        # Verify the params were assembled (first_name and status branches taken)
-        call_kwargs = c._client.get.call_args
-        params = call_kwargs.kwargs.get("params") or call_kwargs.args[1] if call_kwargs.args[1:] else {}
         # Just verify it ran without error
         assert results[0].order_id == "PO-2024-001"
 
@@ -454,9 +449,7 @@ class TestCourtStatisticsAdditional:
     def test_statewide_summary_returns_list(self) -> None:
         """statewide_summary covers all its code paths (line 255)."""
         c = _make_client(CourtStatisticsClient)
-        c._client.get = AsyncMock(
-            return_value=_mock_response({"counties": [SAMPLE_CASELOAD]})
-        )
+        c._client.get = AsyncMock(return_value=_mock_response({"counties": [SAMPLE_CASELOAD]}))
         results = _run(c.statewide_summary(2023))
         assert len(results) == 1
         assert results[0].county == "Marion"
@@ -581,9 +574,7 @@ class TestECRWClientAdditional:
     def test_search_records_with_all_optional_params(self) -> None:
         """search_records with all optional params covers lines 505-513+."""
         c = _make_client(ECRWClient)
-        c._client.get = AsyncMock(
-            return_value=_mock_response({"records": [SAMPLE_ECRW]})
-        )
+        c._client.get = AsyncMock(return_value=_mock_response({"records": [SAMPLE_ECRW]}))
         results = _run(
             c.search_records(
                 case_number="49D01-2010-CF-045678",
@@ -600,9 +591,7 @@ class TestECRWClientAdditional:
     def test_search_records_minimal(self) -> None:
         """search_records with no optional params (skips all optional branches)."""
         c = _make_client(ECRWClient)
-        c._client.get = AsyncMock(
-            return_value=_mock_response({"records": []})
-        )
+        c._client.get = AsyncMock(return_value=_mock_response({"records": []}))
         results = _run(c.search_records())
         assert results == []
 
@@ -620,9 +609,7 @@ class TestECRWClientAdditional:
     def test_bulk_export_with_date_range(self) -> None:
         """bulk_export with date_from and date_to covers lines 522 and 526."""
         c = _make_client(ECRWClient)
-        c._client.get = AsyncMock(
-            return_value=_mock_response({"records": [SAMPLE_ECRW]})
-        )
+        c._client.get = AsyncMock(return_value=_mock_response({"records": [SAMPLE_ECRW]}))
         results = _run(
             c.bulk_export(
                 "Marion",
@@ -635,9 +622,7 @@ class TestECRWClientAdditional:
     def test_bulk_export_without_dates(self) -> None:
         """bulk_export without optional dates (date_from/date_to branches skipped)."""
         c = _make_client(ECRWClient)
-        c._client.get = AsyncMock(
-            return_value=_mock_response({"records": []})
-        )
+        c._client.get = AsyncMock(return_value=_mock_response({"records": []}))
         results = _run(c.bulk_export("Hamilton"))
         assert results == []
 

@@ -481,9 +481,7 @@ class TestLawResourceOrgClient:
     def _make_lro_client(self, responses: list) -> LawResourceOrgClient:
         mock_http = AsyncMock()
         mock_http.get = AsyncMock(side_effect=responses)
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = LawResourceOrgClient()
         client._client = mock_http
         return client
@@ -491,9 +489,7 @@ class TestLawResourceOrgClient:
     @pytest.mark.asyncio
     async def test_context_manager_closes_client(self):
         mock_http = AsyncMock()
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = LawResourceOrgClient()
         client._client = mock_http
         async with client:
@@ -518,9 +514,7 @@ class TestLawResourceOrgClient:
 
         mock_http = AsyncMock()
         mock_http.get = AsyncMock(side_effect=httpx.HTTPError("fail"))
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = LawResourceOrgClient()
         client._client = mock_http
 
@@ -543,9 +537,7 @@ class TestLawResourceOrgClient:
 
         mock_http = AsyncMock()
         mock_http.get = AsyncMock(side_effect=httpx.HTTPError("404"))
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = LawResourceOrgClient()
         client._client = mock_http
 
@@ -556,9 +548,7 @@ class TestLawResourceOrgClient:
     async def test_list_opinion_files_filters_html(self):
         resp = MagicMock()
         resp.text = (
-            '<a href="../">up</a>'
-            '<a href="0_index.html">skip</a>'
-            '<a href="1.F3.500.html">ok</a>'
+            '<a href="../">up</a><a href="0_index.html">skip</a><a href="1.F3.500.html">ok</a>'
         )
         resp.raise_for_status = MagicMock()
         client = self._make_lro_client([resp])
@@ -573,9 +563,7 @@ class TestLawResourceOrgClient:
 
         mock_http = AsyncMock()
         mock_http.get = AsyncMock(side_effect=httpx.HTTPError("error"))
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = LawResourceOrgClient()
         client._client = mock_http
 
@@ -586,10 +574,7 @@ class TestLawResourceOrgClient:
     async def test_fetch_seventh_circuit_samples(self):
         """fetch_indiana_seventh_circuit_samples wires list_volumes + fetch_opinion_html."""
         indiana_html = (
-            "<html><p>"
-            + "Indiana 7th Circuit opinion text. " * 20
-            + "2022"
-            + "</p></html>"
+            "<html><p>" + "Indiana 7th Circuit opinion text. " * 20 + "2022" + "</p></html>"
         )
         # Responses: list_volumes → vol listing; _list_opinion_files → file listing;
         # fetch_opinion_html → opinion html
@@ -620,9 +605,7 @@ class TestIndianaCodeClientAsync:
     def _make_iga_client(self, responses: list) -> IndianaCodeClient:
         mock_http = AsyncMock()
         mock_http.get = AsyncMock(side_effect=responses)
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = IndianaCodeClient()
         client._client = mock_http
         return client
@@ -630,9 +613,7 @@ class TestIndianaCodeClientAsync:
     @pytest.mark.asyncio
     async def test_context_manager_closes_client(self):
         mock_http = AsyncMock()
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = IndianaCodeClient()
         client._client = mock_http
         async with client:
@@ -675,9 +656,7 @@ class TestIndianaCodeClientAsync:
 
         mock_http = AsyncMock()
         mock_http.get = AsyncMock(side_effect=httpx.HTTPError("error"))
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = IndianaCodeClient()
         client._client = mock_http
 
@@ -705,9 +684,7 @@ class TestIndianaCodeClientAsync:
 
         mock_http = AsyncMock()
         mock_http.get = AsyncMock(side_effect=httpx.HTTPError("not found"))
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = IndianaCodeClient()
         client._client = mock_http
 
@@ -723,9 +700,7 @@ class TestCourtListenerFetchIndianaOpinionsError:
     async def test_fetch_indiana_opinions_logs_error_when_court_raises(self):
         """One court fetch raises; line 205 logs the error and continues (line 205)."""
         mock_http = AsyncMock()
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = CourtListenerClient(api_token="")
         client._client = mock_http
 
@@ -773,9 +748,7 @@ class TestLROFetchSamplesEdgeCases:
     def _make_lro_client(self, responses: list) -> LawResourceOrgClient:
         mock_http = AsyncMock()
         mock_http.get = AsyncMock(side_effect=responses)
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = LawResourceOrgClient()
         client._client = mock_http
         return client
@@ -791,22 +764,15 @@ class TestLROFetchSamplesEdgeCases:
         resp_files.text = '<a href="case1.html">case1</a>'
         resp_files.raise_for_status = MagicMock()
 
-        # fetch_opinion_html will call self._client.get which raises HTTPError → returns ""
-        import httpx
-
         client = self._make_lro_client([resp_vols, resp_files])
         # Override fetch_opinion_html to return empty string
         client._client.get = AsyncMock(return_value=resp_vols)
 
-        with patch.object(
-            client, "fetch_opinion_html", new=AsyncMock(return_value="")
-        ):
+        with patch.object(client, "fetch_opinion_html", new=AsyncMock(return_value="")):
             with patch.object(
                 client, "_list_opinion_files", new=AsyncMock(return_value=["case1.html"])
             ):
-                with patch.object(
-                    client, "list_volumes", new=AsyncMock(return_value=["700"])
-                ):
+                with patch.object(client, "list_volumes", new=AsyncMock(return_value=["700"])):
                     opinions = await client.fetch_indiana_seventh_circuit_samples(
                         max_volumes=1, opinions_per_volume=1
                     )
@@ -924,9 +890,7 @@ class TestParseStatuteMissingBranches:
         }
         mock_http = AsyncMock()
         mock_http.get = AsyncMock(return_value=resp)
-        with patch(
-            "ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http
-        ):
+        with patch("ingestion.sources.public_resource.httpx.AsyncClient", return_value=mock_http):
             client = IndianaCodeClient()
         client._client = mock_http
 
