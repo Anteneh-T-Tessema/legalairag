@@ -7,6 +7,33 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Pre-validate stored JWT before React loads — clears stale/invalid tokens
+      (function() {
+        var token = localStorage.getItem("indyleg_token");
+        if (!token) return;
+        try {
+          var parts = token.split(".");
+          if (parts.length !== 3) throw new Error("bad");
+          var payload = JSON.parse(atob(parts[1]));
+          if (payload.exp && payload.exp * 1000 < Date.now()) throw new Error("expired");
+        } catch(e) {
+          localStorage.removeItem("indyleg_token");
+          localStorage.removeItem("indyleg_refresh");
+          return;
+        }
+        // Verify signature is still valid by calling /auth/me
+        var base = "http://localhost:8000/api/v1";
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", base + "/auth/me", false); // synchronous
+        xhr.setRequestHeader("Authorization", "Bearer " + token);
+        try { xhr.send(); } catch(e) { return; }
+        if (xhr.status === 401) {
+          localStorage.removeItem("indyleg_token");
+          localStorage.removeItem("indyleg_refresh");
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

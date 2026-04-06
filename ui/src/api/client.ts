@@ -76,6 +76,7 @@ export interface FraudAnalysisResponse {
 
 export interface LoginResponse {
   access_token: string;
+  refresh_token: string;
   token_type: string;
   role: string;
 }
@@ -89,27 +90,70 @@ export async function login(username: string, password: string): Promise<LoginRe
   if (!res.ok) throw new Error("Invalid credentials");
   const data = (await res.json()) as LoginResponse;
   localStorage.setItem("indyleg_token", data.access_token);
+  localStorage.setItem("indyleg_refresh", data.refresh_token ?? "");
   return data;
 }
 
 export function logout(): void {
   localStorage.removeItem("indyleg_token");
+  localStorage.removeItem("indyleg_refresh");
 }
 
 export function isAuthenticated(): boolean {
   return !!localStorage.getItem("indyleg_token");
 }
 
+export async function validateToken(): Promise<boolean> {
+  const token = localStorage.getItem("indyleg_token");
+  if (!token) return false;
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, { headers: authHeaders() });
+    if (res.ok) return true;
+    if (res.status === 401 && (await refreshAccessToken())) return true;
+    logout();
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+async function refreshAccessToken(): Promise<boolean> {
+  const refresh = localStorage.getItem("indyleg_refresh");
+  if (!refresh) return false;
+  try {
+    const res = await fetch(`${API_BASE}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refresh }),
+    });
+    if (!res.ok) return false;
+    const data = (await res.json()) as { access_token: string; refresh_token: string };
+    localStorage.setItem("indyleg_token", data.access_token);
+    localStorage.setItem("indyleg_refresh", data.refresh_token);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function ask(
   query: string,
   jurisdiction?: string
 ): Promise<AskResponse> {
-  const res = await fetch(`${API_BASE}/search/ask`, {
+  let res = await fetch(`${API_BASE}/search/ask`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({ query, jurisdiction }),
   });
+  if (res.status === 401 && (await refreshAccessToken())) {
+    res = await fetch(`${API_BASE}/search/ask`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ query, jurisdiction }),
+    });
+  }
   if (!res.ok) {
+    if (res.status === 401) { logout(); window.location.reload(); return undefined as never; }
     const detail = await res.text();
     throw new Error(`Ask failed (${res.status}): ${detail}`);
   }
@@ -121,36 +165,60 @@ export async function search(
   top_k = 5,
   jurisdiction?: string
 ): Promise<SearchResponse> {
-  const res = await fetch(`${API_BASE}/search`, {
+  let res = await fetch(`${API_BASE}/search`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({ query, top_k, jurisdiction }),
   });
+  if (res.status === 401 && (await refreshAccessToken())) {
+    res = await fetch(`${API_BASE}/search`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ query, top_k, jurisdiction }),
+    });
+  }
   if (!res.ok) {
+    if (res.status === 401) { logout(); window.location.reload(); return undefined as never; }
     throw new Error(`Search failed (${res.status})`);
   }
   return res.json() as Promise<SearchResponse>;
 }
 
 export async function ingestDocument(req: IngestRequest): Promise<IngestResponse> {
-  const res = await fetch(`${API_BASE}/documents/ingest`, {
+  let res = await fetch(`${API_BASE}/documents/ingest`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify(req),
   });
+  if (res.status === 401 && (await refreshAccessToken())) {
+    res = await fetch(`${API_BASE}/documents/ingest`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify(req),
+    });
+  }
   if (!res.ok) {
+    if (res.status === 401) { logout(); window.location.reload(); return undefined as never; }
     throw new Error(`Ingest failed (${res.status})`);
   }
   return res.json() as Promise<IngestResponse>;
 }
 
 export async function analyzeFraud(query: string): Promise<FraudAnalysisResponse> {
-  const res = await fetch(`${API_BASE}/fraud/analyze`, {
+  let res = await fetch(`${API_BASE}/fraud/analyze`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({ query }),
   });
+  if (res.status === 401 && (await refreshAccessToken())) {
+    res = await fetch(`${API_BASE}/fraud/analyze`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ query }),
+    });
+  }
   if (!res.ok) {
+    if (res.status === 401) { logout(); window.location.reload(); return undefined as never; }
     const detail = await res.text();
     throw new Error(`Fraud analysis failed (${res.status}): ${detail}`);
   }

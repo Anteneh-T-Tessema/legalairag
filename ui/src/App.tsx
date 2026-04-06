@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SearchBar } from "./components/SearchBar";
 import { ResultCard } from "./components/ResultCard";
 import { ChatInterface } from "./components/ChatInterface";
@@ -6,7 +6,7 @@ import { SearchResults } from "./components/SearchResults";
 import { DocumentUpload } from "./components/DocumentUpload";
 import { FraudAnalysis } from "./components/FraudAnalysis";
 import { LoginForm } from "./components/LoginForm";
-import { ask, isAuthenticated, logout } from "./api/client";
+import { ask, isAuthenticated, logout, validateToken } from "./api/client";
 import type { AskResponse } from "./api/client";
 
 type Tab = "ask" | "search" | "chat" | "fraud" | "documents";
@@ -19,6 +19,14 @@ export default function App() {
   const [result, setResult] = useState<AskResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (authed) {
+      validateToken().then((valid) => {
+        if (!valid) setAuthed(false);
+      });
+    }
+  }, []);
 
   if (!authed) {
     return <LoginForm onLogin={() => setAuthed(true)} />;
