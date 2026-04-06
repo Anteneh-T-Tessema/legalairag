@@ -1,7 +1,7 @@
 # Security Documentation
 
 **Project**: IndyLeg — Indiana Legal AI RAG Platform
-**Version**: 0.2.0 | **Date**: April 2026
+**Version**: 0.7.0 | **Date**: April 2026
 
 ---
 
@@ -73,7 +73,7 @@ sequenceDiagram
     Note over User,Redis: Login
     User->>API: POST /auth/token {username, password}
     API->>Auth: verify_password(plain, hashed)
-    Auth-->>API: verified (bcrypt)
+    Auth-->>API: verified (HMAC-SHA256)
     API->>Auth: create_access_token(user, role)
     Auth-->>API: JWT (60 min TTL)
     API->>Auth: create_refresh_token(user)
@@ -97,7 +97,8 @@ sequenceDiagram
     "role": "ATTORNEY",
     "type": "access",
     "exp": 1713200400,
-    "iat": 1713196800
+    "iat": 1713196800,
+    "jti": "a1b2c3d4e5f6..."
 }
 ```
 
@@ -108,12 +109,14 @@ sequenceDiagram
 | `type` | `access` or `refresh` |
 | `exp` | Expiration timestamp (Unix) |
 | `iat` | Issued-at timestamp (Unix) |
+| `jti` | Unique token ID (hex, for revocation tracking) |
 
 ### Password Security
 
-- **Algorithm**: bcrypt via `passlib`
-- **Rounds**: Default 12 (configurable)
-- **Storage**: Hashed passwords only — plaintext never stored or logged
+- **Algorithm**: HMAC-SHA256 with a random 32-byte salt
+- **Implementation**: `hmac.new()` from Python stdlib (no external dependency)
+- **Salt**: Cryptographically random `secrets.token_hex(32)` per user
+- **Storage**: Hashed passwords + salts only — plaintext never stored or logged
 
 ---
 
@@ -406,7 +409,7 @@ Applied by `SecurityHeadersMiddleware` to every response:
 
 ### Sensitive Data Handling
 
-- **Passwords**: bcrypt hashed, never stored in plaintext
+- **Passwords**: HMAC-SHA256 hashed (32-byte random salt), never stored in plaintext
 - **JWT Tokens**: Not logged; only token ID (JTI) appears in audit logs
 - **PII in filings**: Stored as-received from court systems; no additional PII collection
 - **Query inputs**: Logged for audit but not exported to external systems
@@ -456,7 +459,7 @@ Internet
 | # | Vulnerability | Status | Mitigation |
 |---|---|---|---|
 | A01 | Broken Access Control | ✅ Mitigated | RBAC with `require_role()` decorator; JWT verification on every request |
-| A02 | Cryptographic Failures | ✅ Mitigated | bcrypt for passwords; HS256 JWT; TLS everywhere; AES-256 at rest |
+| A02 | Cryptographic Failures | ✅ Mitigated | HMAC-SHA256 for passwords; HS256 JWT; TLS everywhere; AES-256 at rest |
 | A03 | Injection | ✅ Mitigated | Parameterized SQL queries (psycopg); Pydantic input validation |
 | A04 | Insecure Design | ✅ Mitigated | Citation validation prevents hallucination; advisory-only fraud output |
 | A05 | Security Misconfiguration | ✅ Mitigated | Security headers middleware; restrictive CORS; secrets in SSM |

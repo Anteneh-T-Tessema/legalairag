@@ -2,7 +2,7 @@
 
 This document provides a detailed technical overview of the IndyLeg platform — an AI-powered legal research and fraud detection system built for Indiana courts.
 
-**Version**: 0.2.0 | **Last Updated**: April 2026
+**Version**: 0.7.0 | **Last Updated**: April 2026
 
 ---
 
@@ -87,7 +87,7 @@ IndyLeg is a Retrieval-Augmented Generation (RAG) platform for Indiana legal res
 │  CORS → JWT Authentication (HS256)               │
 ├──────────────────────────────────────────────────┤
 │                 Agent Layer                       │
-│  CaseResearchAgent   (7-step RAG pipeline)       │
+│  CaseResearchAgent   (6-step RAG pipeline)       │
 │  SummarizationAgent  (structured extraction)     │
 │  FraudDetectionAgent (5 pattern detectors)       │
 │  BaseAgent           (audit trail, tool control) │
@@ -238,7 +238,7 @@ All logs emitted as structured JSON via `structlog`:
 | `document_versions` | Content-hash dedup for ingestion |
 | `citation_edges` | Citation relationships between opinions |
 
-HNSW index (`ef_construction=128, m=16`) for approximate nearest neighbor search. GIN index on metadata JSONB for filtered queries.
+IVFFlat index (`lists=100, vector_cosine_ops`) for approximate nearest neighbor search. GIN index on metadata JSONB for filtered queries.
 
 ### OpenSearch
 

@@ -161,7 +161,7 @@ Legal answers must be **verifiable**. A lawyer cannot cite "the AI said so" — 
 │  ║  (Vite + TS)  ║◄──►║   /api/v1           ║◄──►║                          ║    │
 │  ║               ║    ║                    ║    ║  ┌──────────────────────┐ ║    │
 │  ║  • Ask tab    ║    ║  • /search         ║    ║  │ CaseResearchAgent    │ ║    │
-│  ║  • Search tab ║    ║  • /search/ask     ║    ║  │ (5-step RAG pipeline)│ ║    │
+│  ║  • Search tab ║    ║  • /search/ask     ║    ║  │ (6-step RAG pipeline)│ ║    │
 │  ║  • Chat tab   ║    ║  • /auth/token     ║    ║  ├──────────────────────┤ ║    │
 │  ║  • Documents  ║    ║  • /health         ║    ║  │ SummarizationAgent   │ ║    │
 │  ╚═══════════════╝    ╚═════════╦══════════╝    ║  │ (parties, holdings,  │ ║    │
@@ -552,7 +552,7 @@ Failure case:
   <img src="docs/img/agent-pipeline.svg" alt="Agent Pipeline" width="820"/>
 </p>
 
-#### CaseResearchAgent (5-Step Pipeline)
+#### CaseResearchAgent (6-Step Pipeline)
 
 The research agent coordinates the full RAG pipeline:
 
@@ -940,28 +940,28 @@ The FastAPI CORS middleware is configured with an explicit `allow_origins` list 
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE legal_chunks (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    chunk_id        TEXT UNIQUE NOT NULL,
-    source_id       TEXT NOT NULL,
-    source_type     TEXT NOT NULL,          -- 'court_filing', 'statute', 'ruling'
-    document_url    TEXT,
-    text            TEXT NOT NULL,
-    embedding       VECTOR(1024),           -- pgvector 1024-dimensional column
-    metadata        JSONB NOT NULL,         -- jurisdiction, case_type, citations, etc.
-    created_at      TIMESTAMPTZ DEFAULT NOW(),
-    updated_at      TIMESTAMPTZ DEFAULT NOW()
+    chunk_id     TEXT PRIMARY KEY,
+    source_id    TEXT NOT NULL,
+    section      TEXT,
+    section_idx  INTEGER,
+    char_start   INTEGER,
+    char_end     INTEGER,
+    citations    TEXT[],
+    metadata     JSONB,
+    content      TEXT NOT NULL,
+    embedding    vector(1024)
 );
 
--- HNSW index for approximate nearest neighbor search
--- ef_construction=128 and m=16 are standard starting points
-CREATE INDEX ON legal_chunks USING hnsw (embedding vector_cosine_ops)
-WITH (ef_construction = 128, m = 16);
+-- IVFFlat index for approximate nearest neighbor search
+CREATE INDEX IF NOT EXISTS legal_chunks_embedding_idx
+    ON legal_chunks USING ivfflat (embedding vector_cosine_ops)
+    WITH (lists = 100);
 
--- B-tree index for metadata filtering (jurisdiction, case_type)
-CREATE INDEX ON legal_chunks USING gin (metadata);
+-- B-tree index on source_id for filtered queries
+CREATE INDEX IF NOT EXISTS legal_chunks_source_idx ON legal_chunks (source_id);
 ```
 
-**Why HNSW over IVFFlat?** HNSW (Hierarchical Navigable Small World) provides better recall at high query-per-second loads without requiring a training step. IVFFlat requires pre-computing cluster centroids (`VACUUM ANALYZE`) whenever the dataset changes significantly. For a legal corpus that grows continuously, HNSW is operationally simpler.
+**Why IVFFlat?** IVFFlat (Inverted File with Flat quantization) partitions the vector space into clusters and searches only the nearest clusters at query time. It is simple to tune (`lists` parameter) and works well for legal corpora that grow incrementally.
 
 ### `document_versions` Table
 
@@ -1150,7 +1150,7 @@ Returns ranked document chunks without generating an answer. Useful for document
 
 #### `POST /search/ask` — RAG Answer Generation
 
-Runs the full 5-step CaseResearchAgent pipeline: retrieval → re-ranking → generation → validation.
+Runs the full 6-step CaseResearchAgent pipeline: retrieval → re-ranking → generation → validation.
 
 **Request:**
 ```json
@@ -1236,13 +1236,8 @@ Runs the `FraudDetectionAgent` over filings matching the query. Returns risk ass
 
 ```json
 {
-  "status": "healthy",
-  "version": "1.0.0",
-  "checks": {
-    "database": "ok",
-    "opensearch": "ok",
-    "bedrock": "ok"
-  }
+  "status": "ok",
+  "env": "development"
 }
 ```
 
@@ -1333,7 +1328,7 @@ indyleg/
 │       └── legal_qa.py             # System prompts for legal Q&A generation
 ├── agents/
 │   ├── base_agent.py               # BaseAgent ABC — audit trail, tool access control
-│   ├── research_agent.py           # 5-step CaseResearchAgent + authority reranking
+│   ├── research_agent.py           # 6-step CaseResearchAgent + authority reranking
 │   ├── summarization_agent.py      # Structured document summarization
 │   └── fraud_detection_agent.py    # Fraud pattern detection (5 detectors + risk scoring)
 ├── api/
@@ -1461,7 +1456,7 @@ This starts:
 - **PostgreSQL 15** with `pgvector` extension on port `5432`
 - **OpenSearch 2.x** on port `9200`
 - **LocalStack** (S3 + SQS emulation) on port `4566`
-- The init script at `infrastructure/docker/init.sql` runs automatically, creating the `legal_chunks` table and HNSW index
+- The init script at `infrastructure/docker/init.sql` runs automatically, creating the `legal_chunks` table and IVFFlat index
 
 Wait for services to be healthy:
 
@@ -1768,7 +1763,7 @@ The CDK stack creates this role automatically via `api_stack.py`.
 
 - Titan Embed v2 is called only during ingestion (offline) and once per query (very low marginal cost)
 - Claude 3.5 Sonnet is invoked at `temperature=0.0` with `max_tokens=4096`; most legal answers are < 1000 tokens
-- pgvector HNSW index uses `ef_search=64` at query time (configurable) to trade recall for speed
+- pgvector IVFFlat index uses `probes=10` at query time (configurable) to trade recall for speed
 - OpenSearch `t3.medium.search` data nodes are sufficient for < 10M chunks; scale to `m6g.large` for production loads
 
 ---
@@ -1838,9 +1833,9 @@ npm install
 npx tsc --noEmit   # see specific type errors
 ```
 
-### pgvector HNSW index not being used
+### pgvector IVFFlat index not being used
 
-Run `EXPLAIN ANALYZE` on a vector query. If a sequential scan is used instead of the HNSW index, the `enable_seqscan` GUC may be on or the table may be too small for the planner to choose the index. For tables < 1000 rows, the planner correctly chooses a seq scan.
+Run `EXPLAIN ANALYZE` on a vector query. If a sequential scan is used instead of the IVFFlat index, the `enable_seqscan` GUC may be on or the table may be too small for the planner to choose the index. For tables < 1000 rows, the planner correctly chooses a seq scan.
 
 ---
 

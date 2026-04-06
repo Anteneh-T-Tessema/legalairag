@@ -171,15 +171,17 @@ print(resp.json())  # {"message": "Document queued", "job_id": "..."}
 
 ## Health & Metrics
 
+> **Note**: `/health`, `/metrics`, and `/metrics/json` are root-level routes, not under `/api/v1`.
+
 ```bash
 # Health check (no auth)
 curl -s "$BASE/health"
 
 # Prometheus metrics (admin)
-curl -s "$BASE/api/v1/metrics" -H "Authorization: Bearer $ADMIN_TOKEN"
+curl -s "$BASE/metrics" -H "Authorization: Bearer $ADMIN_TOKEN"
 
 # JSON metrics (admin)
-curl -s "$BASE/api/v1/metrics/json" -H "Authorization: Bearer $ADMIN_TOKEN"
+curl -s "$BASE/metrics/json" -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 ---

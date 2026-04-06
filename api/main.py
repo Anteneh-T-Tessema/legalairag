@@ -20,7 +20,7 @@ configure_logging(settings.log_level)
 
 app = FastAPI(
     title="IndyLeg — Indiana Legal RAG Platform",
-    version="0.2.0",
+    version="0.7.0",
     description="AI-powered legal research and document intelligence for Indiana courts.",
     docs_url="/docs" if settings.app_env != "production" else None,
     redoc_url=None,

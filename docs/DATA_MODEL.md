@@ -1,7 +1,7 @@
 # Data Model & ER Diagrams
 
 **Project**: IndyLeg — Indiana Legal AI RAG Platform
-**Version**: 0.2.0 | **Date**: April 2026
+**Version**: 0.7.0 | **Date**: April 2026
 
 ---
 

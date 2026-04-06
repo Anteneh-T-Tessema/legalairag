@@ -1,7 +1,7 @@
 # System Design Document
 
 **Project**: IndyLeg — Indiana Legal AI RAG Platform
-**Version**: 0.2.0 | **Date**: April 2026
+**Version**: 0.7.0 | **Date**: April 2026
 
 ---
 
@@ -42,7 +42,7 @@ graph TB
     end
 
     subgraph "API Layer"
-        API[FastAPI v0.2.0]
+        API[FastAPI v0.7.0]
         MW[Middleware Stack<br/>Security → Rate Limit → Audit → Metrics]
         API --> MW
         MW --> R1[auth_router]
@@ -236,8 +236,8 @@ Court Level           Weight    Examples
 US Supreme Court      1.00     Brown v. Board
 US Circuit Court      0.90     7th Circuit opinions
 Indiana Supreme       0.85     State high court
-Indiana Appeals       0.75     Intermediate appellate
-IN Tax / Workers Comp 0.65     Specialty courts
+Indiana Appeals       0.70     Intermediate appellate
+IN Tax / Workers Comp 0.60     Specialty courts
 Trial Court           0.40     County-level
 Default               0.35     Unrecognized courts
 ```
@@ -524,7 +524,7 @@ sequenceDiagram
 |---|---|---|
 | **Template Method** | `BaseAgent.run()` | Defines audit-trail skeleton; subclasses implement specific logic |
 | **Strategy** | `QueryParser` → adaptive weights | Different retrieval strategies (citation_lookup vs. semantic vs. hybrid) |
-| **Pipeline** | `CaseResearchAgent` 7-step chain | Sequential processing with intermediate results |
+| **Pipeline** | `CaseResearchAgent` 6-step chain | Sequential processing with intermediate results |
 | **Observer** | `MetricsCollector` middleware | Non-intrusive request/response measurement |
 | **Decorator** | `@require_role(...)` | Declarative RBAC enforcement on endpoints |
 | **Factory** | `DocumentLoader.load_from_bytes()` | Format-specific parser selection (PDF/DOCX/HTML/TXT) |

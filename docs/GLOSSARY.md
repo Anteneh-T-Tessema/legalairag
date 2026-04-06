@@ -40,7 +40,7 @@ Quick reference for legal, AI/ML, and infrastructure terms used throughout the I
 | **Bi-encoder** | A model that independently encodes queries and documents into vectors. Used for fast approximate retrieval (Titan Embed v2). |
 | **Cross-encoder** | A model that jointly encodes a (query, document) pair and scores relevance directly. Slower but more accurate than bi-encoders. Used for re-ranking (`ms-marco-MiniLM-L-6-v2`). |
 | **BM25** | Best Match 25 — a sparse keyword-based ranking function. IndyLeg uses BM25 via OpenSearch alongside dense vector search. |
-| **HNSW** | Hierarchical Navigable Small World — an approximate nearest-neighbor index algorithm used by pgvector for fast vector similarity search. |
+| **HNSW** | Hierarchical Navigable Small World — an approximate nearest-neighbor graph algorithm for fast vector similarity search. IndyLeg uses **IVFFlat** (Inverted File with Flat quantization) for its pgvector index. |
 | **RRF** | **Reciprocal Rank Fusion** — a score fusion method that combines ranked lists from multiple retrievers. Formula: `score = Σ 1/(k + rank)` where `k = 60`. |
 | **Cosine similarity** | A similarity metric measuring the angle between two vectors. Value range: −1 to 1 (1 = identical direction). Used by pgvector for vector search. |
 | **Temperature** | An LLM sampling parameter controlling randomness. IndyLeg uses `temperature=0.0` for deterministic, factual responses. |
@@ -57,7 +57,7 @@ Quick reference for legal, AI/ML, and infrastructure terms used throughout the I
 
 | Term | Definition |
 | --- | --- |
-| **run_id** | A UUID assigned to each agent execution. Threads through all 5 pipeline steps for end-to-end audit tracing. |
+| **run_id** | A UUID assigned to each agent execution. Threads through all pipeline steps for end-to-end audit tracing. |
 | **ParsedQuery** | The structured output of `QueryParser` — contains `jurisdiction`, `case_type`, `citations`, and `bm25_keywords`. |
 | **CitationValidator** | The post-generation guard that verifies every `[SOURCE: id]` tag in the LLM response maps to an actually-retrieved chunk. Blocks hallucinated citations. |
 | **AuthorityRanker** | Scores documents based on Indiana court hierarchy (Supreme Court > Court of Appeals > Tax Court > Circuit > Superior). |
@@ -73,7 +73,7 @@ Quick reference for legal, AI/ML, and infrastructure terms used throughout the I
 
 | Term | Definition |
 | --- | --- |
-| **pgvector** | A PostgreSQL extension that adds vector data types and similarity search operators. IndyLeg stores 1024-dim embeddings in an HNSW-indexed column. |
+| **pgvector** | A PostgreSQL extension that adds vector data types and similarity search operators. IndyLeg stores 1024-dim embeddings in an IVFFlat-indexed column (`lists=100, vector_cosine_ops`). |
 | **Aurora** | Amazon Aurora PostgreSQL — the managed database service running PostgreSQL 16 with pgvector in production. |
 | **OpenSearch** | AWS-managed search engine (Elasticsearch-compatible) used for BM25 keyword indexing and full-text search. |
 | **ECS Fargate** | AWS Elastic Container Service with Fargate launch type — serverless container orchestration for the API and worker services. |

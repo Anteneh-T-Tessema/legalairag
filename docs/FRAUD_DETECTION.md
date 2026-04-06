@@ -127,8 +127,8 @@ The overall risk level is computed by aggregating individual indicator severitie
 
 | Risk Level | Condition |
 |---|---|
-| `critical` | Any indicator with `severity="critical"` OR ≥3 high-severity indicators |
-| `high` | Any high-severity indicator |
+| `critical` | Any indicator with `severity="critical"` OR (≥2 high-severity indicators) OR (1 high-severity indicator AND ≥3 total indicators) |
+| `high` | Any high-severity indicator OR ≥2 medium-severity indicators |
 | `medium` | Any medium-severity indicator |
 | `low` | Only low-severity indicators |
 | `none` | No indicators detected |

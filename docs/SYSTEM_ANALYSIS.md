@@ -1,7 +1,7 @@
 # System Analysis Document
 
 **Project**: IndyLeg — Indiana Legal AI RAG Platform
-**Version**: 0.2.0 | **Date**: April 2026
+**Version**: 0.7.0 | **Date**: April 2026
 
 ---
 
@@ -171,7 +171,7 @@ graph TB
 | **Actor** | Attorney, Clerk |
 | **Precondition** | User is authenticated |
 | **Main Flow** | 1. User enters natural language legal question |
-| | 2. CaseResearchAgent executes 7-step pipeline |
+| | 2. CaseResearchAgent executes 6-step pipeline |
 | | 3. System generates answer with [SOURCE: id] citations |
 | | 4. CitationValidator verifies all citations are grounded |
 | | 5. System returns answer with confidence level |

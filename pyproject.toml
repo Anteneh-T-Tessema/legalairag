@@ -7,7 +7,7 @@ packages = ["agents", "api", "config", "generation", "ingestion", "retrieval"]
 
 [project]
 name = "indyleg"
-version = "0.1.0"
+version = "0.7.0"
 description = "Indiana Legal RAG Platform — AI-powered legal research and document intelligence"
 requires-python = ">=3.11"
 dependencies = [
@@ -99,7 +99,7 @@ omit = [
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 60
+fail_under = 100
 exclude_lines = [
     "pragma: no cover",
     "if TYPE_CHECKING:",

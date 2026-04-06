@@ -75,7 +75,7 @@ test: add integration tests for pgvector cosine search
 
 - **Linter**: ruff (line length 100)
 - **Type checker**: Pyright (basic mode)
-- **Target**: Python 3.11+ syntax, 3.9+ compatible via `from __future__ import annotations`
+- **Target**: Python 3.11+ syntax and runtime
 - No `Any` types without an explanatory comment
 - Prefer `dataclass` for data containers
 - Use structlog for all logging (via `config.logging.get_logger`)

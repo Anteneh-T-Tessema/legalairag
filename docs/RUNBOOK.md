@@ -1,7 +1,7 @@
 # Operations Runbook
 
 **Project**: IndyLeg — Indiana Legal AI RAG Platform
-**Version**: 0.2.0 | **Date**: April 2026
+**Version**: 0.7.0 | **Date**: April 2026
 
 ---
 
@@ -123,8 +123,7 @@ Expected response:
 ```json
 {
     "status": "ok",
-    "version": "0.2.0",
-    "timestamp": "2026-04-15T14:30:00Z"
+    "env": "development"
 }
 ```
 

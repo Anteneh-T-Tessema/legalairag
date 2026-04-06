@@ -3,9 +3,11 @@
 Complete API reference for the IndyLeg FastAPI backend.
 
 **Base URL**: `https://your-alb-dns/api/v1`
-**Version**: 0.2.0 | **Date**: April 2026
+**Version**: 0.7.0 | **Date**: April 2026
 
 All endpoints except `/auth/token`, `/health`, and `/metrics` require `Authorization: Bearer <token>`.
+
+> **Note**: `/health`, `/metrics`, and `/metrics/json` are mounted at the **root level** (e.g., `http://host:8000/health`), not under `/api/v1`. All other endpoints are under `/api/v1`.
 
 ### Endpoint Summary
 
@@ -250,6 +252,8 @@ Runs the FraudDetectionAgent over filings matching the query. Returns risk asses
 
 ## Health & Monitoring
 
+> **Note**: These endpoints are at the **root level**, not under `/api/v1`.
+
 ### `GET /health`
 
 No authentication required.
@@ -257,13 +261,8 @@ No authentication required.
 **Response `200 OK`:**
 ```json
 {
-  "status": "healthy",
-  "version": "0.2.0",
-  "checks": {
-    "database": "ok",
-    "opensearch": "ok",
-    "bedrock": "ok"
-  }
+  "status": "ok",
+  "env": "development"
 }
 ```
 

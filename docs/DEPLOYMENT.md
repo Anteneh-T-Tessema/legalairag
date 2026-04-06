@@ -1,7 +1,7 @@
 # Deployment Guide
 
 **Project**: IndyLeg — Indiana Legal AI RAG Platform
-**Version**: 0.2.0 | **Date**: April 2026
+**Version**: 0.7.0 | **Date**: April 2026
 
 ---
 
@@ -144,8 +144,8 @@ make ui
 ### Running Tests
 
 ```bash
-make test             # All tests (187 total)
-make test-unit        # Unit tests only (167 Python + 20 UI)
+make test             # All tests (712 total)
+make test-unit        # Unit tests only (692 Python + 20 UI)
 make test-integration # Integration tests (requires running services)
 make lint             # ruff check + pyright
 make format           # Auto-format code
@@ -382,7 +382,7 @@ cd infrastructure/cdk && cdk deploy --all --context env=staging
 ```bash
 # API health
 curl https://{api-url}/health
-# Expected: {"status": "ok", "version": "0.2.0", "timestamp": "..."}
+# Expected: {"status": "ok", "env": "staging"}
 
 # Metrics endpoint
 curl https://{api-url}/metrics

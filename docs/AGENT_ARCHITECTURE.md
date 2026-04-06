@@ -1,7 +1,7 @@
 # Agent Architecture
 
 **Project**: IndyLeg — Indiana Legal AI RAG Platform
-**Version**: 0.2.0 | **Date**: April 2026
+**Version**: 0.7.0 | **Date**: April 2026
 
 ---
 
@@ -169,7 +169,7 @@ class BaseAgent(ABC):
 
 ### Purpose
 
-Execute a 7-step RAG pipeline optimized for Indiana legal research with citation-grounded answers.
+Execute a 6-step RAG pipeline optimized for Indiana legal research with citation-grounded answers.
 
 ### Pipeline
 
@@ -177,14 +177,13 @@ Execute a 7-step RAG pipeline optimized for Indiana legal research with citation
 flowchart LR
     A[Parse Query] --> B[Embed Query]
     B --> C[Hybrid Search]
-    C --> D[Temporal Filter]
-    D --> E[Cross-Encoder Rerank]
-    E --> F[Authority Blend]
-    F --> G[Generate Answer]
-    G --> H[Validate Citations]
-    H --> I{Valid?}
-    I -->|Yes| J[Return Answer]
-    I -->|No| K[Fallback Response]
+    C --> D[Cross-Encoder Rerank]
+    D --> E[Authority Blend]
+    E --> F[Generate Answer]
+    F --> G[Validate Citations]
+    G --> H{Valid?}
+    H -->|Yes| I[Return Answer]
+    H -->|No| J[Fallback Response]
 ```
 
 ### Step Details
@@ -194,10 +193,9 @@ flowchart LR
 | 1. Parse | `_parse_query()` | Raw text | `ParsedQuery` | Extracts jurisdiction, case_type, citations; sets query_type + weights |
 | 2. Embed | `_embed_query()` | Text | `vector[1024]` | Bedrock Titan Embed v2 |
 | 3. Search | `_hybrid_search()` | Vector + text | `SearchResult[]` | pgvector cosine + OpenSearch BM25 → RRF fusion (k=60) |
-| 4. Filter | `_temporal_filter()` | Results | Filtered results | Remove superseded/expired documents if query implies "current law" |
-| 5. Rerank | `_rerank()` | Query + results | Re-scored results | ms-marco-MiniLM-L-6-v2 cross-encoder |
-| 6. Authority | `_authority_blend()` | Results | Authority-ranked | `(1-α)×retrieval + α×authority` where α is adaptive |
-| 7. Generate | `_generate_answer()` | Question + context | Answer text | Claude 3.5 Sonnet (temp=0.0) with [SOURCE: id] citations |
+| 4. Rerank | `_rerank()` | Query + results | Re-scored results | ms-marco-MiniLM-L-6-v2 cross-encoder |
+| 5. Authority | `_authority_blend()` | Results | Authority-ranked | `(1-α)×retrieval + α×authority` where α is adaptive |
+| 6. Generate | `_generate_answer()` | Question + context | Answer text | Claude 3.5 Sonnet (temp=0.0) with [SOURCE: id] citations |
 
 ### Confidence Estimation
 
@@ -251,13 +249,15 @@ flowchart TB
 ### Risk Level Computation
 
 ```text
-Indicators Found    Risk Level    Action
-──────────────────────────────────────────
-0                   NONE          No concerns
-1                   LOW           Monitor
-2-3                 MEDIUM        Review recommended
-4+                  HIGH          Detailed investigation advised
-Any with ≥0.9 conf CRITICAL      Immediate review advised
+Condition                                           Risk Level
+──────────────────────────────────────────────────
+No indicators                                       NONE
+Only low-severity indicators                        LOW
+Any medium-severity indicator                       MEDIUM
+≥2 medium-severity indicators                       HIGH
+Any high-severity indicator                         HIGH
+≥2 high-severity OR (1 high + ≥3 total indicators)  CRITICAL
+Any critical-severity indicator                     CRITICAL
 ```
 
 ### Safety Guarantees
