@@ -59,9 +59,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.2,<9.0",
-    "pytest-asyncio>=0.23,<1.0",
-    "pytest-cov>=5.0,<6.0",
+    "pytest>=8.2,<10.0",
+    "pytest-asyncio>=0.23,<2.0",
+    "pytest-cov>=5.0,<8.0",
     "ruff>=0.4,<1.0",
     "mypy>=1.10,<2.0",
     "moto[s3,sqs,batch]>=5.0,<6.0",
